@@ -1,0 +1,19 @@
+{
+  "name": "@jarvis/memory",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@jarvis/ai": "*",
+    "@jarvis/db": "*",
+    "@jarvis/knowledge": "*",
+    "@jarvis/types": "*",
+    "drizzle-orm": "^0.45.3",
+    "zod": "^4.6.5"
+  }
+}

@@ -1,46 +1,108 @@
 # JARVIS
 
-<img width="1629" height="965" alt="image" src="https://github.com/user-attachments/assets/62d1afd7-3f78-4adf-b835-1e0c6a9afc9f" />
+**Your financial second brain.** Remember everything. Connect the dots. Act with context.
 
-JARVIS is an AI "second brain" that remembers your notes and explains your
-portfolio on [Robinhood Chain](https://docs.robinhood.com/chain/). It is
-read-only with money: no private keys, no trades.
+![JARVIS overview](apps/web/public/screenshots/overview.png)
 
-## What is here
+JARVIS is a persistent intelligence layer around your financial life. It keeps
+your notes, theses, research, trades and market events in one memory, turns
+them into a living knowledge graph, retrieves the right context before it
+reasons, and answers with the sources it used. It is not a chatbot, a tracker
+or a trading bot: it never executes an action on its own.
 
-| Path | What it does |
-| --- | --- |
-| `src/app/page.tsx` | Landing page |
-| `src/app/chat` + `src/app/api/chat` | Chat with JARVIS, streamed from the Claude API |
-| `src/app/wallet` + `src/app/api/wallet/[address]` | Read-only ETH balance lookup on Robinhood Chain mainnet (4663) or testnet (46630) |
-| `src/lib/chain.ts` | Robinhood Chain definitions for viem and RPC helpers |
-| `db/schema.sql` | Target Postgres + pgvector schema with row-level security (not wired up yet) |
+```
+CAPTURE → REMEMBER → CONNECT → UNDERSTAND → REASON → INSIGHT → ACTION → REMEMBER
+```
 
-## Run locally
+## Status
 
-Requires Node.js 22+.
+Phase 1 (foundation) is implemented: accounts, the memory system with exact,
+semantic and hybrid search, entity extraction, the knowledge graph and its
+explorer, Ask JARVIS with "Memory used", and a fictional demo workspace.
+Portfolio, research, insights and watchlist pages read the demo data; their
+engines arrive in Phase 2. Robinhood connections and the action approval flow
+are Phase 3. See [docs/milestones.md](docs/milestones.md).
+
+## Quick start
+
+Requirements: Node.js 22.
 
 ```bash
-cp .env.example .env.local   # add ANTHROPIC_API_KEY
 npm install
+npm run dev          # http://localhost:3000
+```
+
+That is all. With no configuration JARVIS uses:
+
+- an **embedded PostgreSQL** (PGlite with pgvector) stored in `.jarvis-data/`,
+- **offline mode** for AI: answers quote your memory instead of reasoning, and
+  embeddings come from a local hashing model,
+- a **demo workspace**: click "Explore the demo workspace" on the sign-in page.
+  Each visitor gets a private copy; its companies, notes and trades are
+  fictional and its prices are illustrative, not market data.
+
+### Use a real model
+
+Copy `.env.example` to `.env` at the repo root and set one of:
+
+```bash
+ANTHROPIC_API_KEY=...        # Claude (default model claude-opus-5)
+OPENAI_API_KEY=...           # plus OPENAI_MODEL; also enables OpenAI embeddings
+AI_PROVIDER=local            # Ollama: LOCAL_AI_URL, LOCAL_AI_MODEL, LOCAL_EMBEDDING_MODEL
+```
+
+Keys are read on the server only and never reach the browser. Changing the
+embedding provider changes the vector space; memories are searched only with
+embeddings from the active model.
+
+### Use PostgreSQL in Docker
+
+```bash
+npm run db:up                                            # pgvector/pgvector:pg16
+echo 'DATABASE_URL=postgres://jarvis:jarvis@localhost:5432/jarvis' >> .env
+npm run db:migrate
+npm run db:seed                                          # optional: demo@jarvis.local workspace
 npm run dev
 ```
 
-Open http://localhost:3000.
+Migrations also run automatically when the app starts.
 
-## Checks
+## Scripts
 
-```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
+| Command | What it does |
+| --- | --- |
+| `npm run dev` / `build` / `start` | Next.js app in `apps/web` |
+| `npm test` | Vitest: services, search, graph, seed and reasoning on in-memory PGlite |
+| `npm run typecheck` | TypeScript for packages and the app |
+| `npm run lint` | ESLint |
+| `npm run db:generate` | Generate a migration from `packages/db/src/schema.ts` |
+| `npm run db:migrate` / `db:seed` | Apply migrations / create a demo workspace |
+| `npm run db:up` | Start PostgreSQL + pgvector with Docker |
+
+## Repository
+
+```
+apps/web            Next.js: landing page, product UI, API routes, auth, reasoning
+packages/types      Domain types and Zod schemas
+packages/db         Drizzle schema (Postgres + pgvector), client for Postgres or PGlite
+packages/ai         AIProvider and EmbeddingProvider: Anthropic, OpenAI, local, offline
+packages/memory     Capture, entity extraction, exact/semantic/hybrid search, demo seed
+packages/knowledge  Entities, relationships, clusters, neighbourhoods
+packages/broker     Robinhood Chain read-only helpers (broker abstraction lands in Phase 3)
+packages/ui         Design system components
+infrastructure      Docker compose and SQL migrations
+docs                Architecture, database, interfaces, Robinhood, milestones
 ```
 
-## Roadmap
+Read [docs/architecture.md](docs/architecture.md) first.
 
-1. Skeleton: web app, chat, chain reads (this)
-2. Memory: accounts, notes, file upload, search with citations
-3. Wallets: Sign-In with Ethereum, token balances, Chainlink prices, transaction history
-4. Theses and price alerts
-5. Public beta
+## Principles
+
+- **Memory first.** JARVIS retrieves before it answers and cites what it used.
+- **No invented data.** No market prices it cannot source; demo data is labelled
+  and stored with `data_mode = demo`, separate from live data.
+- **No automatic execution.** Actions are proposals you review and confirm.
+- **Official interfaces only.** Robinhood integration uses documented APIs
+  ([docs/robinhood.md](docs/robinhood.md)).
+
+JARVIS is not investment advice.
