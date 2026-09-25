@@ -64,8 +64,8 @@ export default function ChatPage() {
             key={i}
             className={
               m.role === "user"
-                ? "self-end rounded-2xl bg-brand px-4 py-2 text-brand-foreground"
-                : "self-start whitespace-pre-wrap rounded-2xl border border-border bg-surface px-4 py-2"
+                ? "self-end rounded-none bg-brand px-4 py-2 text-brand-foreground"
+                : "self-start whitespace-pre-wrap rounded-none border border-hairline bg-surface px-4 py-2"
             }
           >
             {m.content || (pending ? "…" : "")}
@@ -83,12 +83,12 @@ export default function ChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Message JARVIS"
-          className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 outline-none focus:border-brand"
+          className="flex-1 rounded-none border border-hairline bg-background px-4 py-2.5 outline-none focus:border-brand"
         />
         <button
           type="submit"
           disabled={pending || !input.trim()}
-          className="rounded-full bg-brand px-5 py-2.5 font-semibold text-brand-foreground disabled:opacity-50"
+          className="rounded-none bg-brand px-5 py-2.5 font-semibold text-brand-foreground disabled:opacity-50"
         >
           Send
         </button>

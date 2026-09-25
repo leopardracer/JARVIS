@@ -43,12 +43,12 @@ export default function WalletPage() {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="0x…"
-          className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 font-mono text-sm outline-none focus:border-brand"
+          className="flex-1 rounded-none border border-hairline bg-background px-4 py-2.5 font-mono text-sm outline-none focus:border-brand"
         />
         <select
           value={network}
           onChange={(e) => setNetwork(e.target.value as Network)}
-          className="rounded-full border border-border bg-background px-4 py-2.5"
+          className="rounded-none border border-hairline bg-background px-4 py-2.5"
         >
           <option value="mainnet">Mainnet</option>
           <option value="testnet">Testnet</option>
@@ -56,7 +56,7 @@ export default function WalletPage() {
         <button
           type="submit"
           disabled={pending || !address.trim()}
-          className="rounded-full bg-brand px-5 py-2.5 font-semibold text-brand-foreground disabled:opacity-50"
+          className="rounded-none bg-brand px-5 py-2.5 font-semibold text-brand-foreground disabled:opacity-50"
         >
           {pending ? "Checking…" : "Check"}
         </button>
@@ -65,7 +65,7 @@ export default function WalletPage() {
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       {result && (
-        <div className="rounded-2xl border border-border bg-surface p-6">
+        <div className="rounded-none border border-hairline bg-surface p-6">
           <p className="text-sm text-muted">ETH balance</p>
           <p className="text-3xl font-bold">{result.eth} ETH</p>
           <p className="mt-2 text-sm text-muted">
