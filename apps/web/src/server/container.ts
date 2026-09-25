@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { createAIProvider, createEmbeddingProvider, type AIProvider, type EmbeddingProvider } from "@jarvis/ai";
 import { createDatabase, databaseConfigFromEnv, type DatabaseHandle } from "@jarvis/db";
 import { MemoryService, seedDemo } from "@jarvis/memory";
-import type { KnowledgeService } from "@jarvis/knowledge";
+import { createBrokerProvider, type BrokerProvider } from "@jarvis/broker";
+import { InsightEngine, type KnowledgeService } from "@jarvis/knowledge";
 
 export type Services = {
   database: DatabaseHandle;
@@ -12,6 +13,9 @@ export type Services = {
   embedder: EmbeddingProvider;
   memory: MemoryService;
   knowledge: KnowledgeService;
+  insights: InsightEngine;
+  /** Brokerage used for demo syncs. Never used to place orders. */
+  demoBroker: BrokerProvider;
   /** Builds a fresh, private demo workspace from the fictional seed. */
   createDemoWorkspace: () => Promise<string>;
 };
@@ -33,6 +37,8 @@ async function boot(): Promise<Services> {
     embedder,
     memory,
     knowledge: memory.knowledge,
+    insights: new InsightEngine(database.db),
+    demoBroker: createBrokerProvider(),
     createDemoWorkspace: async () => {
       // Every visitor gets their own copy, so nobody sees what another visitor typed.
       const email = `demo-${randomUUID()}@demo.jarvis.local`;

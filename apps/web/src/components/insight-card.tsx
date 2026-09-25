@@ -12,11 +12,14 @@ type Insight = {
   createdAt: Date | string;
 };
 
-export function InsightCard({ insight, compact }: { insight: Insight; compact?: boolean }) {
+export function InsightCard({ insight, compact, actions }: { insight: Insight & { status?: string }; compact?: boolean; actions?: React.ReactNode }) {
   return (
     <article className={cn("flex flex-col gap-3 border border-line p-5", !compact && "sm:p-6")}>
-      <div className="flex items-center justify-between">
-        <Badge tone="cobalt">{label(insight.kind)}</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2">
+          <Badge tone="cobalt">{label(insight.kind)}</Badge>
+          {insight.status === "new" && !compact ? <span className="size-1.5 bg-signal" aria-label="New" /> : null}
+        </span>
         <span className="eyebrow text-gray">{timeAgo(insight.createdAt)}</span>
       </div>
       <h3 className="text-lg font-semibold leading-snug tracking-tight">{insight.title}</h3>
@@ -48,6 +51,7 @@ export function InsightCard({ insight, compact }: { insight: Insight; compact?: 
           </ul>
         </div>
       ) : null}
+      {actions ? <div className="-mb-2 mt-auto flex justify-end border-t border-line pt-2">{actions}</div> : null}
     </article>
   );
 }

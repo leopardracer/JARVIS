@@ -3,11 +3,9 @@ import { z } from "zod";
 import { ProviderConfigError } from "@jarvis/ai";
 import { AuthError } from "./auth";
 
-export class HttpError extends Error {
-  constructor(readonly status: number, message: string) {
-    super(message);
-  }
-}
+import { HttpError } from "./errors";
+
+export { HttpError };
 
 /** Wrap a route handler: consistent JSON errors, no stack traces to the client. */
 export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response>) {

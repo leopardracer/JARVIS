@@ -247,3 +247,54 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
 }
+
+// ---------- Phase 2: financial context ----------
+
+const symbol = z
+  .string()
+  .trim()
+  .min(1)
+  .max(12)
+  .regex(/^\$?[A-Za-z0-9.\-]+$/, "Use a ticker like NVDA or ETH")
+  .transform((s) => s.replace(/^\$/, "").toUpperCase());
+
+export const THESIS_STANCES = ["bullish", "bearish", "neutral"] as const;
+export type ThesisStance = (typeof THESIS_STANCES)[number];
+
+export const createThesisSchema = z.object({
+  title: z.string().trim().min(1, "Name the thesis").max(200),
+  statement: z.string().trim().min(1, "State the thesis").max(10_000),
+  stance: z.enum(THESIS_STANCES).default("bullish"),
+  conviction: z.coerce.number().int().min(1).max(5).default(3),
+  symbols: z.array(symbol).max(10).default([]),
+});
+export type CreateThesisInput = z.input<typeof createThesisSchema>;
+
+export const updateThesisSchema = z
+  .object({
+    stance: z.enum(THESIS_STANCES),
+    conviction: z.coerce.number().int().min(1).max(5),
+    status: z.enum(["active", "closed"]),
+    note: z.string().trim().max(2000).optional(),
+  })
+  .partial();
+export type UpdateThesisInput = z.input<typeof updateThesisSchema>;
+
+export const thesisEvidenceSchema = z.object({
+  memoryId: z.uuid(),
+  relation: z.enum(["supports", "contradicts"]),
+});
+
+export const watchlistItemSchema = z.object({
+  symbol,
+  name: z.string().trim().max(120).optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const watchlistNoteSchema = z.object({ note: z.string().trim().max(500).nullable() });
+
+export const researchRequestSchema = z.object({
+  query: z.string().trim().min(3, "Ask a research question").max(1000),
+});
+
+export const insightStatusSchema = z.object({ status: z.enum(["new", "seen", "dismissed"]) });

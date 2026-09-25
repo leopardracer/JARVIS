@@ -1,6 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import { schema, type Database } from "@jarvis/db";
 import type { CreateMemoryInput, EntityType, RelationshipType } from "@jarvis/types";
+import { DEMO_FILLS, MockBrokerProvider, syncBrokerAccounts } from "@jarvis/broker";
+import { InsightEngine } from "@jarvis/knowledge";
 import type { MemoryService } from "./service";
 
 /**
@@ -11,7 +13,6 @@ import type { MemoryService } from "./service";
 export const DEMO_EMAIL = "demo@jarvis.local";
 
 const DAY = 86_400_000;
-const daysAgo = (d: number) => new Date(Date.now() - d * DAY);
 
 type SeedEntity = { key: string; type: EntityType; name: string; symbol?: string; aliases?: string[]; description: string };
 
@@ -125,25 +126,23 @@ const MEMORIES: SeedMemory[] = [
     tags: ["semiconductors"], source: "reading",
   },
   {
+    key: "i-agents", days: 3, type: "idea", title: "AI agents that pay on-chain",
+    content: "Demo scenario: if AI agents start paying for compute and data per request with stablecoins, most of those payments would settle on Ethereum rollups. That would tie AI infrastructure demand to $ETH, two parts of the portfolio that looked unrelated.",
+    tags: ["idea", "crypto"],
+  },
+  {
     key: "tr-btc-trim", days: 6, type: "trade", title: "Trimmed BTC",
     content: "Sold part of the $BTC position to stay under the crypto cap after the fund inflows.",
     tags: ["position", "rebalance"],
   },
 ];
 
-// Illustrative fills. Not real prices.
-const TRADES: { memory: string; asset: string; side: "buy" | "sell"; quantity: string; price: string }[] = [
-  { memory: "tr-nvda", asset: "NVDA", side: "buy", quantity: "20", price: "100" },
-  { memory: "tr-amd", asset: "AMD", side: "buy", quantity: "15", price: "120" },
-  { memory: "tr-eth", asset: "ETH", side: "buy", quantity: "0.5", price: "2500" },
-  { memory: "tr-btc", asset: "BTC", side: "buy", quantity: "0.01", price: "60000" },
-  { memory: "tr-btc-trim", asset: "BTC", side: "sell", quantity: "0.004", price: "70000" },
-];
-
 export type SeedResult = { userId: string; created: boolean };
 
-export async function seedDemo(db: Database, memory: MemoryService, opts: { email?: string } = {}): Promise<SeedResult> {
+export async function seedDemo(db: Database, memory: MemoryService, opts: { email?: string; now?: Date } = {}): Promise<SeedResult> {
   const email = opts.email ?? DEMO_EMAIL;
+  const now = (opts.now ?? new Date()).getTime();
+  const daysAgo = (d: number) => new Date(now - d * DAY);
   const [existing] = await db.select().from(schema.users).where(eq(schema.users.email, email));
   if (existing) return { userId: existing.id, created: false };
 
@@ -167,46 +166,35 @@ export async function seedDemo(db: Database, memory: MemoryService, opts: { emai
     mem.set(key, m.id);
   }
 
-  // Financial context.
+  // Financial context, synced from the fictional mock brokerage like a real connection would be.
   const portfolioEntity = await k.upsertEntity(userId, {
     type: "portfolio",
     name: "Demo portfolio",
     description: "Fictional holdings with illustrative prices.",
     metadata: { demo: true },
   });
-  const [portfolio] = await db
-    .insert(schema.portfolios)
-    .values({ userId, name: "Demo portfolio (illustrative)", provider: "mock", dataMode: "demo", entityId: portfolioEntity.id })
-    .returning();
-  const holdings = new Map<string, { qty: number; cost: number }>();
-  for (const t of TRADES) {
-    const days = MEMORIES.find((m) => m.key === t.memory)!.days;
-    await db.insert(schema.transactions).values({
+  const [sync] = await syncBrokerAccounts({
+    db,
+    userId,
+    provider: new MockBrokerProvider({ now: opts.now }),
+    portfolioEntityId: portfolioEntity.id,
+    resolveAsset: async (a) => ent.get(a.symbol) ?? (await k.upsertEntity(userId, { type: "asset", name: a.name, symbol: a.symbol })).id,
+  });
+  for (const fill of DEMO_FILLS) {
+    const txId = sync.transactionIds.get(fill.id);
+    if (!txId) continue;
+    await db.update(schema.transactions).set({ memoryId: mem.get(fill.ref)! }).where(eq(schema.transactions.id, txId));
+    await db.insert(schema.activities).values({
       userId,
-      portfolioId: portfolio.id,
-      assetEntityId: ent.get(t.asset)!,
-      side: t.side,
-      quantity: t.quantity,
-      price: t.price,
-      executedAt: daysAgo(days),
-      dataMode: "demo",
-      memoryId: mem.get(t.memory)!,
-    });
-    const h = holdings.get(t.asset) ?? { qty: 0, cost: 0 };
-    const q = Number(t.quantity);
-    const p = Number(t.price);
-    if (t.side === "buy") holdings.set(t.asset, { qty: h.qty + q, cost: h.cost + q * p });
-    else holdings.set(t.asset, { qty: h.qty - q, cost: h.cost - (h.cost / h.qty) * q });
-  }
-  for (const [asset, h] of holdings) {
-    await k.link(userId, portfolioEntity.id, ent.get(asset)!, "invested_in");
-    await db.insert(schema.positions).values({
-      portfolioId: portfolio.id,
-      assetEntityId: ent.get(asset)!,
-      quantity: h.qty.toString(),
-      averageCost: (h.cost / h.qty).toFixed(2),
+      kind: "trade",
+      subjectType: "memory",
+      subjectId: mem.get(fill.ref)!,
+      summary: `${fill.side === "buy" ? "Bought" : "Sold"} ${fill.quantity} ${fill.symbol} at $${Number(fill.price).toLocaleString("en-US")} (demo fill)`,
+      createdAt: daysAgo(fill.daysAgo),
     });
   }
+  const held = await db.select({ assetId: schema.positions.assetEntityId }).from(schema.positions).where(eq(schema.positions.portfolioId, sync.portfolioId));
+  for (const p of held) await k.link(userId, portfolioEntity.id, p.assetId, "invested_in");
 
   const thesisRows: { key: string; stance: string; conviction: number; assets: string[]; evidence: [string, string][] }[] = [
     { key: "t-ai", stance: "bullish", conviction: 4, assets: ["NVDA"], evidence: [["r-capex", "supports"], ["n-concentration", "contradicts"], ["e-export", "contradicts"]] },
@@ -248,42 +236,9 @@ export async function seedDemo(db: Database, memory: MemoryService, opts: { emai
     { userId, query: "Is AMD's software good enough for inference?", summary: MEMORIES.find((m) => m.key === "r-amd-software")!.content, status: "done", memoryId: mem.get("r-amd-software")!, createdAt: daysAgo(12) },
   ]);
 
-  // Insights derived from the seeded data above.
-  const total = [...holdings.values()].reduce((s, h) => s + h.cost, 0);
-  const crypto = (holdings.get("ETH")?.cost ?? 0) + (holdings.get("BTC")?.cost ?? 0);
-  const ai = (holdings.get("NVDA")?.cost ?? 0) + (holdings.get("AMD")?.cost ?? 0);
-  const pct = (n: number) => `${Math.round((n / total) * 100)}%`;
-  await db.insert(schema.insights).values([
-    {
-      userId, kind: "concentration", title: "Most of your equity risk is one theme",
-      whatChanged: `NVDA and AMD are ${pct(ai)} of cost basis, and both link to AI infrastructure in your graph.`,
-      whyItMatters: "Your own note says they would fall together if data center capex slows.",
-      evidence: [{ label: "Too much AI in one basket?", memoryId: mem.get("n-concentration") }, { label: "AI infrastructure spend is still early", memoryId: mem.get("t-ai") }],
-      memoryIds: [mem.get("n-concentration")!, mem.get("t-ai")!],
-      entityIds: [ent.get("ai")!, ent.get("NVDA")!, ent.get("AMD")!],
-      createdAt: daysAgo(2),
-    },
-    {
-      userId, kind: "thesis_pressure", title: "New evidence against the AMD thesis",
-      whatChanged: "Your latest research note found the software gap is narrower but still there.",
-      whyItMatters: "Two of the three notes linked to this thesis now argue against it or for a longer timeline.",
-      evidence: [{ label: "AMD software gap check", memoryId: mem.get("r-amd-software") }, { label: "Scenario: tighter chip export rules", memoryId: mem.get("e-export") }],
-      memoryIds: [mem.get("r-amd-software")!, mem.get("e-export")!, mem.get("t-amd")!],
-      entityIds: [ent.get("AMD")!, ent.get("amdCo")!],
-      createdAt: daysAgo(1),
-    },
-    {
-      userId, kind: "goal", title: "Crypto is back inside your cap",
-      whatChanged: `After trimming BTC, crypto is ${pct(crypto)} of cost basis.`,
-      whyItMatters: "Your rule is to keep Bitcoin plus Ether under 15%.",
-      evidence: [{ label: "Keep crypto under 15% of the portfolio", memoryId: mem.get("g-crypto") }, { label: "Trimmed BTC", memoryId: mem.get("tr-btc-trim") }],
-      memoryIds: [mem.get("g-crypto")!, mem.get("tr-btc-trim")!],
-      entityIds: [ent.get("BTC")!, ent.get("ETH")!, ent.get("crypto")!],
-      createdAt: daysAgo(5),
-    },
-  ]);
-
   await backdate(db, userId);
+  // Insights come from the same engine a real workspace uses, run over the story above.
+  await new InsightEngine(db).run(userId, opts.now);
   return { userId, created: true };
 }
 

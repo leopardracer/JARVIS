@@ -1,6 +1,6 @@
 # Milestones
 
-## Phase 1: foundation (this PR)
+## Phase 1: foundation (done)
 
 - [x] Architecture, schema, interfaces and milestones (`docs/`)
 - [x] Monorepo: `apps/web` + `packages/*`, shared TypeScript config, Vitest, CI
@@ -17,12 +17,17 @@
 - [x] Landing page in the brand system
 - [x] Tests for services and API validation; README and local development guide
 
-## Phase 2: financial context and insights
+## Phase 2: financial context and insights (done)
 
-Portfolio, holdings and transactions views (demo data from `MockBrokerProvider`),
-watchlist, research runs, insight engine (thesis change, contradictions, new
-connections, mention frequency, exposure change) with explainable evidence,
-activity timeline.
+- [x] `BrokerProvider` contract and `MockBrokerProvider` (fictional, `dataMode: "demo"`, no order capability)
+- [x] Idempotent broker sync into portfolios, positions and transactions; the demo workspace is synced from the mock brokerage
+- [x] Portfolio: positions with linked theses, exposure by theme from the knowledge graph, transactions with the memory behind each trade
+- [x] Theses: create, change stance and conviction (each change saved to memory with its reason), close, link evidence for and against
+- [x] Research runs: retrieve from memory, cited brief (or an extractive brief offline), saved back into memory as a research note
+- [x] Insight engine with explainable evidence: concentration, exposure change, goal caps, thesis change, contradictions, new connections, mention frequency; deduplicated by fingerprint
+- [x] Insights page: filters, seen and dismiss, re-run on demand and after thesis, research and sync changes
+- [x] Watchlist: add by ticker, notes, mentions, holdings and theses per asset
+- [x] Activity timeline grouped by day with filters
 
 ## Phase 3: broker and actions
 
