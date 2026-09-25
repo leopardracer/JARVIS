@@ -109,13 +109,13 @@ export function Shell({ user, children }: { user: ShellUser; children: React.Rea
 }
 
 /** Page header on the grid: eyebrow, title, optional description and actions. */
-export function PageHeader({ index, title, description, actions }: { index: string; title: string; description?: string; actions?: React.ReactNode }) {
+export function PageHeader({ index, title, description, actions }: { index: string; title: string; description?: React.ReactNode; actions?: React.ReactNode }) {
   return (
     <header className="flex flex-col gap-4 px-4 pb-6 pt-8 sm:px-8 md:flex-row md:items-end md:justify-between lg:pt-12">
       <div className="space-y-3">
         <p className="eyebrow text-gray">{index}</p>
-        <h1 className="display text-5xl sm:text-6xl">{title}</h1>
-        {description ? <p className="max-w-xl text-sm leading-relaxed text-gray">{description}</p> : null}
+        <h1 className={cn("display text-balance", title.length > 28 ? "max-w-4xl text-3xl sm:text-5xl" : "text-5xl sm:text-6xl")}>{title}</h1>
+        {typeof description === "string" ? <p className="max-w-xl text-sm leading-relaxed text-gray">{description}</p> : description}
       </div>
       {actions ? <div className="flex gap-2">{actions}</div> : null}
     </header>

@@ -83,6 +83,39 @@ interface BrokerProvider {
 }
 ```
 
+`MockBrokerProvider` (Phase 2) returns a fictional account; `syncBrokerAccounts({ db, userId, provider, resolveAsset })`
+imports it idempotently (transactions keyed by the provider's id, positions replaced with the provider's view).
+
+## Insights (`packages/knowledge`)
+
+```ts
+exposure(db, userId, at?): Promise<Exposure>      // holdings replayed from trades, share of cost basis per graph theme
+class InsightEngine {
+  detect(userId, now?): Promise<InsightDraft[]>;    // pure read
+  run(userId, now?): Promise<InsightRun>;           // stores new drafts, skips known fingerprints, logs activity
+}
+// InsightDraft = { kind, title, whatChanged, whyItMatters, evidence: { label, memoryId? }[], memoryIds, entityIds, fingerprint }
+```
+
+Detectors are rules over the user's own data, so every insight is reproducible
+and cites the memories behind it. None of them uses market prices.
+
+| Kind | Fires when |
+| --- | --- |
+| `concentration` | One theme carries at least half of cost basis across two or more assets |
+| `exposure_change` | A theme's share moved 3 points or more in 30 days because of trades |
+| `goal` | A goal memory with a cap ("under 15%") is breached, close to it, or back inside it |
+| `thesis_change` | An active thesis has at least as much recent evidence against it as for it |
+| `contradiction` | A memory argues against another node, a trade goes against an active thesis, or two theses take opposite sides |
+| `new_connection` | A memory in the last 14 days links two entities never linked before |
+| `mention_frequency` | An entity appears in 3+ memories in 14 days, at least twice its usual rate |
+
+## Research (`apps/web/src/server/research`)
+
+```ts
+runResearch(deps, userId, query): Promise<ResearchRow> // RETRIEVE → REASON → REMEMBER; saves a research memory
+```
+
 ## Auth (`apps/web/src/server/auth`)
 
 ```ts

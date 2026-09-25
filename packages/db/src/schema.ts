@@ -222,10 +222,14 @@ export const portfolios = pgTable(
     externalId: text("external_id"),
     dataMode: dataMode("data_mode").notNull(),
     entityId: uuid("entity_id").references(() => entities.id, { onDelete: "set null" }),
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("portfolios_user_idx").on(t.userId)],
+  (t) => [
+    index("portfolios_user_idx").on(t.userId),
+    uniqueIndex("portfolios_provider_external_idx").on(t.userId, t.provider, t.externalId),
+  ],
 );
 
 export const positions = pgTable(
@@ -273,6 +277,7 @@ export const transactions = pgTable(
   (t) => [
     index("transactions_user_executed_idx").on(t.userId, t.executedAt.desc()),
     index("transactions_asset_idx").on(t.assetEntityId),
+    uniqueIndex("transactions_portfolio_external_idx").on(t.portfolioId, t.externalId),
   ],
 );
 
@@ -331,7 +336,9 @@ export const research = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     query: text("query").notNull(),
     summary: text("summary"),
-    sources: jsonb("sources").$type<{ title: string; url?: string }[]>().notNull().default([]),
+    sources: jsonb("sources").$type<{ title: string; url?: string; memoryId?: string; ref?: string }[]>().notNull().default([]),
+    provider: text("provider"),
+    model: text("model"),
     status: text("status").notNull().default("pending"), // pending | running | done | failed
     memoryId: uuid("memory_id").references(() => memories.id, { onDelete: "set null" }),
     createdAt: createdAt(),
@@ -381,9 +388,14 @@ export const insights = pgTable(
     memoryIds: uuid("memory_ids").array().notNull().default(sql`'{}'::uuid[]`),
     entityIds: uuid("entity_ids").array().notNull().default(sql`'{}'::uuid[]`),
     status: text("status").notNull().default("new"), // new | seen | dismissed
+    /** Stable key for the situation an insight describes, so a rerun never repeats it. */
+    fingerprint: text("fingerprint"),
     createdAt: createdAt(),
   },
-  (t) => [index("insights_user_idx").on(t.userId, t.status, t.createdAt)],
+  (t) => [
+    index("insights_user_idx").on(t.userId, t.status, t.createdAt),
+    uniqueIndex("insights_user_fingerprint_idx").on(t.userId, t.fingerprint),
+  ],
 );
 
 export const activities = pgTable(

@@ -23,7 +23,7 @@ describe("demo seed", () => {
     expect(again).toEqual({ userId: first.userId, created: false });
 
     const stats = await svc.stats(first.userId);
-    expect(stats.memories).toBe(16);
+    expect(stats.memories).toBe(17);
     expect(stats.relationships).toBeGreaterThan(30);
 
     const tx = await h.db.select().from(schema.transactions).where(eq(schema.transactions.userId, first.userId));
@@ -40,5 +40,16 @@ describe("demo seed", () => {
 
     const old = await svc.knowledge.graph(first.userId, { until: new Date(Date.now() - 100 * 86_400_000) });
     expect(old.nodes.length).toBeLessThan(graph.nodes.length);
+
+    // Trades come from the mock brokerage and stay linked to the memories that explain them.
+    expect(tx).toHaveLength(5);
+    expect(tx.every((t) => t.externalId?.startsWith("demo-fill-") && t.memoryId)).toBe(true);
+
+    // Insights are computed by the engine, not hardcoded.
+    const insights = await h.db.select().from(schema.insights).where(eq(schema.insights.userId, first.userId));
+    const kinds = insights.map((i) => i.kind).sort();
+    expect(kinds).toEqual(["concentration", "exposure_change", "goal", "new_connection", "thesis_change", "thesis_change"]);
+    expect(insights.every((i) => i.evidence.length > 0 && i.fingerprint)).toBe(true);
+    expect(insights.find((i) => i.kind === "goal")?.title).toBe("Crypto is back inside your 15% cap");
   });
 });

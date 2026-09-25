@@ -16,12 +16,13 @@ CAPTURE → REMEMBER → CONNECT → UNDERSTAND → REASON → INSIGHT → ACTIO
 
 ## Status
 
-Phase 1 (foundation) is implemented: accounts, the memory system with exact,
+Phases 1 and 2 are implemented: accounts, the memory system with exact,
 semantic and hybrid search, entity extraction, the knowledge graph and its
-explorer, Ask JARVIS with "Memory used", and a fictional demo workspace.
-Portfolio, research, insights and watchlist pages read the demo data; their
-engines arrive in Phase 2. Robinhood connections and the action approval flow
-are Phase 3. See [docs/milestones.md](docs/milestones.md).
+explorer, Ask JARVIS with "Memory used", theses with evidence for and against,
+research runs that save cited briefs back into memory, an explainable insight
+engine, portfolio exposure by theme, watchlist and timeline, and a fictional
+demo workspace synced from a mock brokerage. Robinhood connections and the
+action approval flow are Phase 3. See [docs/milestones.md](docs/milestones.md).
 
 ## Quick start
 

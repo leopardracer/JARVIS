@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@jarvis/ai": "*",
+    "@jarvis/broker": "*",
     "@jarvis/db": "*",
     "@jarvis/knowledge": "*",
     "@jarvis/types": "*",
