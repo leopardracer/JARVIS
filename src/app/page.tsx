@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { NeuralField } from "./neural-field";
 
 const meta = [
   { label: "Year", value: "2026" },
@@ -48,10 +49,16 @@ const stack = [
 export default function Home() {
   return (
     <div className="flex flex-col">
-      <section className="px-4 pt-6 sm:px-6">
-        <h1 className="rise text-[30vw] font-semibold uppercase leading-[0.8] tracking-[-0.06em]">
-          Jarvis
-        </h1>
+      <section className="relative overflow-hidden px-4 pt-6 sm:px-6">
+        <NeuralField className="absolute inset-0 h-full w-full" />
+        <div className="pointer-events-none relative flex min-h-[70vh] flex-col justify-end pb-6">
+          <p className="mb-4 max-w-xs text-sm uppercase tracking-wide">
+            A neural second brain
+          </p>
+          <h1 className="rise text-[30vw] font-semibold uppercase leading-[0.8] tracking-[-0.06em]">
+            Jarvis
+          </h1>
+        </div>
       </section>
 
       <section className="grid grid-cols-2 gap-x-4 gap-y-6 border-b border-hairline px-4 py-8 text-sm sm:px-6 md:grid-cols-4">
