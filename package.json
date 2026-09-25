@@ -1,35 +1,32 @@
 {
   "name": "jarvis",
-  "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
-    "next": "16.3.6",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "viem": "^2.56.9",
-    "zod": "^4.6.5"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^22.20.4",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.6",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^5.0.2"
-  },
+  "description": "JARVIS: your financial second brain",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": ">=22"
-  }
+  },
+  "scripts": {
+    "dev": "npm run dev -w @jarvis/web",
+    "build": "npm run build -w @jarvis/web",
+    "start": "npm run start -w @jarvis/web",
+    "lint": "npm run lint -w @jarvis/web",
+    "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck -w @jarvis/web",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env scripts/db.ts migrate",
+    "db:seed": "tsx --env-file-if-exists=.env scripts/db.ts seed",
+    "db:up": "docker compose -f infrastructure/docker/docker-compose.yml up -d"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.2"
+  },
+  "type": "module"
 }
