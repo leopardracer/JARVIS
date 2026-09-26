@@ -94,6 +94,20 @@ db → types
 6. An `activity` is recorded. Insight detection (Phase 2) listens to these
    activities.
 
+## Scheduled work
+
+Research agents and briefings need no worker process. When someone opens
+JARVIS, agents whose turn has passed run after the response is sent. For
+accounts nobody opens, any scheduler can call `POST /api/scheduler/run` with
+`Authorization: Bearer $CRON_SECRET`, for example:
+
+```
+*/30 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://jarvis.example.com/api/scheduler/run
+```
+
+Agents read only the user's memory. They never fetch prices or news, and they
+never propose or execute trades on their own schedule.
+
 ## Safety model
 
 - JARVIS never executes a trade by itself. Every account-changing operation is

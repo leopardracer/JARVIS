@@ -14,7 +14,11 @@ import { TYPE_COLOR } from "@/lib/graph-style";
 import { EmptyState } from "./brand";
 import { GraphCanvas } from "./graph-canvas";
 
-type Details = EntityDetails & { neighborhood: GraphData };
+type Details = EntityDetails & {
+  neighborhood: GraphData;
+  similar: { id: string; name: string; score: number; reason: string; linked: boolean }[];
+  impact: { id: string; name: string; share: number; path: string }[];
+};
 
 export function GraphExplorer() {
   const params = useSearchParams();
@@ -361,6 +365,47 @@ function EntityPanel({ id, onClose, onFocus, onSelect }: { id: string; onClose: 
           <p className="text-sm leading-relaxed">{summary.data?.text}</p>
         )}
       </section>
+
+      {d.impact.length ? (
+        <section className="space-y-2">
+          <h3 className="eyebrow flex justify-between border-t border-ink pt-2">
+            <span>Reaches your holdings</span>
+            <span className="tabular text-cobalt">{(d.impact.reduce((s, p) => s + p.share, 0) * 100).toFixed(1)}%</span>
+          </h3>
+          <ul className="space-y-2">
+            {d.impact.map((p) => (
+              <li key={p.id}>
+                <button type="button" onClick={() => onSelect(p.id)} className="block w-full text-left text-sm hover:text-cobalt">
+                  <span className="flex items-baseline justify-between gap-2 font-medium">
+                    {p.name} <span className="tabular text-xs text-gray">{(p.share * 100).toFixed(1)}%</span>
+                  </span>
+                  <span className="block text-xs leading-relaxed text-gray">{p.path}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-gray">Shortest chains of stated links, as a share of cost basis. Inferred from your graph, not from market data.</p>
+        </section>
+      ) : null}
+
+      {d.similar.length ? (
+        <section className="space-y-2">
+          <h3 className="eyebrow border-t border-ink pt-2">Looks like</h3>
+          <ul className="divide-y divide-line">
+            {d.similar.map((s) => (
+              <li key={s.id}>
+                <button type="button" onClick={() => onSelect(s.id)} className="block w-full py-2 text-left text-sm hover:text-cobalt">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="font-medium">{s.name}</span>
+                    <span className="tabular font-mono text-xs text-gray">{s.score.toFixed(2)}{s.linked ? "" : " · inferred"}</span>
+                  </span>
+                  <span className="block text-xs text-gray">{s.reason}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <RefList title="Related assets" items={d.relatedAssets} onSelect={onSelect} />
       <RefList title="Events" items={d.relatedEvents} onSelect={onSelect} />

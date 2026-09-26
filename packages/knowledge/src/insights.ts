@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import { schema, type Database } from "@jarvis/db";
 import { exposure, type Exposure } from "./exposure";
+import { describePath, GraphInference, nodeLabel, originMemory } from "./inference";
 
 const { memories, memoryEntities, entities, relationships, theses, thesisMemories, thesisAssets, transactions, insights, activities } = schema;
 
@@ -14,6 +15,8 @@ export const INSIGHT_KINDS = [
   "contradiction",
   "new_connection",
   "mention_frequency",
+  "second_order",
+  "similarity",
 ] as const;
 export type InsightKind = (typeof INSIGHT_KINDS)[number];
 
@@ -82,11 +85,16 @@ export class InsightEngine {
       ...(await this.contradictions(userId, snap, covered)),
       ...(await this.newConnections(userId, snap)),
       ...this.mentionFrequency(snap),
+      ...(await this.graphInference(userId, snap)),
     ];
   }
 
-  /** Detect and store new insights. Findings already raised (even if dismissed) are skipped. */
+  /**
+   * Refresh inferred graph edges, then detect and store new insights.
+   * Findings already raised (even if dismissed) are skipped.
+   */
   async run(userId: string, now = new Date()): Promise<InsightRun> {
+    await new GraphInference(this.db).refresh(userId, now);
     const drafts = await this.detect(userId, now);
     const created: InsightRun["created"] = [];
     for (const d of drafts) {
@@ -415,7 +423,7 @@ export class InsightEngine {
     const edges = await this.db
       .select({ s: relationships.sourceId, t: relationships.targetId, createdAt: relationships.createdAt })
       .from(relationships)
-      .where(eq(relationships.userId, userId));
+      .where(and(eq(relationships.userId, userId), eq(relationships.inferred, false)));
     const key = (a: string, b: string) => (a < b ? `${a}:${b}` : `${b}:${a}`);
     const firstEdge = new Map<string, number>();
     for (const e of edges) {
@@ -463,6 +471,63 @@ export class InsightEngine {
           fingerprint: `connection:${key(a, b)}`,
         };
       });
+  }
+
+  /** Second-order exposure and look-alike holdings, from graph inference. */
+  async graphInference(userId: string, snap: Snapshot): Promise<InsightDraft[]> {
+    const inference = new GraphInference(this.db);
+    const idx = await inference.index(userId, snap.now);
+    if (!idx.held.size) return [];
+    const byRecency = (ids: Iterable<string>) =>
+      [...ids].map((id) => snap.memories.get(id)).filter((m): m is Mem => !!m).sort((a, b) => b.at.getTime() - a.at.getTime());
+    const drafts: InsightDraft[] = [];
+
+    // Something no holding links to directly, which still reaches a large part of the portfolio.
+    for (const r of inference.reach(idx).filter((r) => !r.direct && r.share >= 0.25).slice(0, 2)) {
+      const name = nodeLabel(r.source);
+      const targets = r.paths.map((p) => p.target);
+      const origin = originMemory(r.source);
+      const evidence = byRecency(new Set([...(origin ? [origin] : []), ...(idx.mentions.get(r.source.id) ?? [])])).slice(0, 3);
+      drafts.push({
+        kind: "second_order",
+        title: `${name} reaches ${pct(r.share)} of your portfolio`,
+        whatChanged: r.paths.map((p, i) => `${describePath(i ? "It" : r.source, p.steps)} (${pct(p.share)}).`).join(" "),
+        whyItMatters:
+          r.source.type === "event"
+            ? `None of your holdings links to this directly, yet if it plays out it reaches ${listOf(targets.map(nodeLabel))} through the chain above.`
+            : `None of your holdings links to ${name} directly, so the exposure is easy to miss. Trouble at ${name} reaches ${listOf(targets.map(nodeLabel))} through the chain above.`,
+        evidence: evidence.map((m) => ({ label: m.title, memoryId: m.id })),
+        memoryIds: evidence.map((m) => m.id),
+        entityIds: [r.source.id, ...targets.map((t) => t.id)],
+        fingerprint: `chain:${r.source.id}:${targets.map((t) => t.id).sort().join(":")}`,
+      });
+    }
+
+    // Two unlinked things that look alike, where at least one is a holding or the company behind one.
+    const issuerOf = new Map<string, string>();
+    for (const e of idx.edges) if (e.type === "derived_from" && idx.held.has(e.s)) issuerOf.set(e.t, e.s);
+    const touchesHolding = (id: string) => idx.held.has(id) || issuerOf.has(id);
+    const pairs = inference.similarities(idx, { min: 0.4 }).filter((s) => !s.linked && (touchesHolding(s.a.id) || touchesHolding(s.b.id)));
+    for (const s of pairs.slice(0, 2)) {
+      const [a, b] = [nodeLabel(s.a), nodeLabel(s.b)];
+      const heldIds = [s.a.id, s.b.id].map((id) => (idx.held.has(id) ? id : issuerOf.get(id))).filter((id): id is string => !!id);
+      const heldNames = heldIds.map((id) => nodeLabel(idx.nodes.get(id)!));
+      const both = byRecency([...(idx.mentions.get(s.a.id) ?? [])].filter((id) => idx.mentions.get(s.b.id)?.has(id))).slice(0, 3);
+      drafts.push({
+        kind: "similarity",
+        title: `${a} and ${b} look alike in your graph`,
+        whatChanged: `${s.reason}, but nothing you saved links them to each other.`,
+        whyItMatters:
+          heldIds.length === 2
+            ? `You hold ${listOf(heldNames)}. Positions tied to things this alike tend to move together, so they add up rather than diversify each other.`
+            : `You hold ${listOf(heldNames)}. What you learn about one of these is often evidence about the other.`,
+        evidence: both.map((m) => ({ label: m.title, memoryId: m.id })),
+        memoryIds: both.map((m) => m.id),
+        entityIds: [s.a.id, s.b.id, ...heldIds],
+        fingerprint: `similar:${[s.a.id, s.b.id].sort().join(":")}`,
+      });
+    }
+    return drafts;
   }
 
   mentionFrequency(snap: Snapshot): InsightDraft[] {

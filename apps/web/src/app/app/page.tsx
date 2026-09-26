@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/brand";
 import { GraphPreview } from "@/components/graph-preview";
 import { InsightCard } from "@/components/insight-card";
 import { pageUser } from "@/server/auth";
+import { currentBriefing } from "@/server/briefing";
 import { services } from "@/server/container";
 import { insightsView, portfolioView } from "@/server/queries";
 import { formatDate, label, money, percent, timeAgo } from "@/lib/format";
@@ -14,15 +15,18 @@ export const metadata = { title: "Overview" };
 
 export default async function OverviewPage() {
   const user = await pageUser();
-  const { memory, knowledge, db } = await services();
-  const [stats, recent, graph, portfolio, insights, activity] = await Promise.all([
+  const svc = await services();
+  const { memory, knowledge, db } = svc;
+  const [stats, recent, graph, portfolio, insights, activity, briefing] = await Promise.all([
     memory.stats(user.id),
     memory.list(user.id, { limit: 5 }),
     knowledge.graph(user.id),
     portfolioView(db, user.id),
     insightsView(db, user.id, 3),
     memory.recentActivity(user.id, 8),
+    currentBriefing(svc, user.id, "weekly"),
   ]);
+  const decisions = briefing.sections.find((s) => s.key === "decisions")?.items ?? [];
 
   return (
     <div className="space-y-14 px-4 pb-20 pt-8 sm:px-8 lg:pt-12">
@@ -42,9 +46,28 @@ export default async function OverviewPage() {
         />
       </header>
 
-      <div className="grid gap-x-8 gap-y-14 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-14 lg:grid-cols-12">
+        <section className="space-y-5 lg:col-span-12">
+          <SectionLabel index="01" action={<More href="/app/briefing" label="Full briefing" />}>This week</SectionLabel>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-12">
+            <p className="text-balance text-xl font-medium leading-snug tracking-tight sm:text-2xl lg:col-span-7">{briefing.lede}</p>
+            {decisions.length ? (
+              <ol className="divide-y divide-line border-y border-line lg:col-span-5">
+                {decisions.slice(0, 3).map((d, i) => (
+                  <li key={i}>
+                    <Link href={d.href ?? "/app/briefing"} className="grid grid-cols-[24px_1fr] gap-2 py-2.5 text-sm hover:text-cobalt">
+                      <span className="tabular font-mono text-xs text-gray">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="font-medium">{d.text}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </div>
+        </section>
+
         <section className="space-y-5 lg:col-span-4">
-          <SectionLabel index="01" action={<More href="/app/memory" />}>Memory</SectionLabel>
+          <SectionLabel index="02" action={<More href="/app/memory" />}>Memory</SectionLabel>
           <dl className="grid grid-cols-3 gap-4">
             {[
               ["Memories", stats.memories],
@@ -74,7 +97,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="space-y-5 lg:col-span-8">
-          <SectionLabel index="02" action={<More href="/app/graph" label="Explore" />}>Knowledge graph</SectionLabel>
+          <SectionLabel index="03" action={<More href="/app/graph" label="Explore" />}>Knowledge graph</SectionLabel>
           {graph.nodes.length ? (
             <div className="grid gap-4 md:grid-cols-[1fr_180px]">
               <div className="h-80 border border-line bg-white md:h-96">
@@ -96,7 +119,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="space-y-5 lg:col-span-5">
-          <SectionLabel index="03" action={<More href="/app/portfolio" />}>Portfolio</SectionLabel>
+          <SectionLabel index="04" action={<More href="/app/portfolio" />}>Portfolio</SectionLabel>
           {portfolio ? (
             <div className="space-y-4">
               <div>
@@ -116,12 +139,12 @@ export default async function OverviewPage() {
               </ul>
             </div>
           ) : (
-            <p className="text-sm text-gray">No portfolio connected. Brokerage connections arrive in Phase 3; until then JARVIS works from your notes.</p>
+            <p className="text-sm text-gray">No portfolio yet. Connect a Robinhood Chain wallet in Settings; until then JARVIS works from your notes.</p>
           )}
         </section>
 
         <section className="space-y-5 lg:col-span-7">
-          <SectionLabel index="04" action={<More href="/app/insights" />}>Recent insights</SectionLabel>
+          <SectionLabel index="05" action={<More href="/app/insights" />}>Recent insights</SectionLabel>
           {insights.length ? (
             <div className="grid gap-4 md:grid-cols-2">
               {insights.slice(0, 2).map((i) => <InsightCard key={i.id} insight={i} compact />)}
@@ -132,9 +155,9 @@ export default async function OverviewPage() {
         </section>
 
         <section className="space-y-5 lg:col-span-12">
-          <SectionLabel index="05" action={<More href="/app/activity" />}>Recent activity</SectionLabel>
+          <SectionLabel index="06" action={<More href="/app/activity" />}>Recent activity</SectionLabel>
           {activity.length ? (
-            <ol className="grid gap-x-8 sm:grid-cols-2">
+            <ol className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
               {activity.map((a) => (
                 <li key={a.id} className="flex items-baseline justify-between gap-4 border-b border-line py-2 text-sm">
                   <span className="truncate">{a.summary}</span>

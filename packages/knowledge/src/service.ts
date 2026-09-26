@@ -98,7 +98,8 @@ export class KnowledgeService {
           relationships.targetId,
           relationships.type,
         ],
-        set: { weight: sql`${relationships.weight} + 1`, updatedAt: new Date() },
+        // A stated fact replaces an inferred edge of the same kind.
+        set: { weight: sql`case when ${relationships.inferred} then 1 else ${relationships.weight} + 1 end`, inferred: false, reason: null, updatedAt: new Date() },
       })
       .returning();
     return row;
@@ -177,6 +178,7 @@ export class KnowledgeService {
         type: e.type,
         weight: e.weight,
         createdAt: e.createdAt.toISOString(),
+        ...(e.inferred ? { inferred: true, reason: e.reason } : {}),
       }));
 
     let nodes: GraphNode[] = nodeRows.map((n) => ({

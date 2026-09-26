@@ -48,7 +48,7 @@ function toElements(data: GraphData, clusters: boolean): ElementDefinition[] {
     });
   }
   for (const e of data.edges) {
-    els.push({ data: { id: e.id, source: e.source, target: e.target, type: e.type, label: e.type.replace("_", " "), weight: e.weight } });
+    els.push({ data: { id: e.id, source: e.source, target: e.target, type: e.type, label: e.inferred ? "similar · inferred" : e.type.replace("_", " "), weight: e.inferred ? 1 : e.weight, inferred: e.inferred ? 1 : 0 } });
   }
   return els;
 }
@@ -120,6 +120,7 @@ const STYLE = [
   },
   { selector: "edge[type = 'contradicts']", style: { "line-style": "dashed", "line-color": "#F4A7A1", "target-arrow-color": "#F4A7A1" } },
   { selector: "edge[type = 'supports']", style: { "line-color": "#A9B2FB", "target-arrow-color": "#A9B2FB" } },
+  { selector: "edge[inferred = 1]", style: { "line-style": "dotted", "line-color": "#3046F5", "target-arrow-shape": "none", opacity: 0.55 } },
   { selector: ".hidden", style: { display: "none" } },
   { selector: ".dim", style: { opacity: 0.12 } },
   { selector: "node.hl", style: { "border-width": 2, "border-color": "#3046F5" } },

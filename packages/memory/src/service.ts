@@ -482,7 +482,7 @@ export class MemoryService {
   async stats(userId: string) {
     const [m] = await this.db.select({ n: sql<number>`count(*)::int` }).from(memories).where(eq(memories.userId, userId));
     const [e] = await this.db.select({ n: sql<number>`count(*)::int` }).from(entities).where(eq(entities.userId, userId));
-    const [r] = await this.db.select({ n: sql<number>`count(*)::int` }).from(relationships).where(eq(relationships.userId, userId));
+    const [r] = await this.db.select({ n: sql<number>`count(*)::int` }).from(relationships).where(and(eq(relationships.userId, userId), eq(relationships.inferred, false)));
     return { memories: Number(m.n), entities: Number(e.n), relationships: Number(r.n) };
   }
 }

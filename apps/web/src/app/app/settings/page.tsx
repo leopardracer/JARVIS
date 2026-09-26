@@ -22,6 +22,7 @@ export default async function SettingsPage() {
     ["Demo brokerage", `${s.demoBroker.name} · fictional, paper orders only`, "BROKER_PROVIDER"],
     ["Credentials", process.env.JARVIS_ENCRYPTION_KEY ? "Encrypted with AES-256-GCM (configured key)" : "Encrypted with AES-256-GCM (local development key)", "JARVIS_ENCRYPTION_KEY"],
     ["Trading", "Only after your typed approval and a separate submit. JARVIS never executes on its own.", "—"],
+    ["Agent scheduler", process.env.CRON_SECRET ? "External scheduler enabled (POST /api/scheduler/run), plus catch-up when you open JARVIS" : "Catch-up when you open JARVIS. Set CRON_SECRET to run agents from cron as well.", "CRON_SECRET"],
   ];
   const [connections, recentAudit] = await Promise.all([
     listConnections(s.db, user.id),
@@ -29,7 +30,7 @@ export default async function SettingsPage() {
   ]);
   return (
     <>
-      <PageHeader index="10 — Settings" title="Settings" description="Which providers this JARVIS instance runs on. Keys are read on the server and never sent to the browser." />
+      <PageHeader index="11 — Settings" title="Settings" description="Which providers this JARVIS instance runs on. Keys are read on the server and never sent to the browser." />
       <div className="space-y-14 px-4 pb-20 sm:px-8">
         <section className="space-y-4">
           <SectionLabel index="01">Account</SectionLabel>

@@ -35,7 +35,7 @@ export default async function AuditPage({ searchParams }: Props) {
   return (
     <>
       <PageHeader
-        index="10 — Settings / Audit"
+        index="11 — Settings / Audit"
         title="Audit log"
         description="Every sensitive operation in this workspace: sign-ins, connections, proposals, approvals, refusals and submissions. Entries cannot be edited from the app."
         actions={

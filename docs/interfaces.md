@@ -118,6 +118,35 @@ creates `.jarvis-data/dev-encryption.key` with mode 0600.
 `RobinhoodChainProvider(address, network)` reads the wallet's native ETH balance over the public JSON-RPC
 (`ROBINHOOD_RPC_URL_MAINNET` / `_TESTNET` override it). It reports no cost basis and cannot place orders.
 
+## Graph inference (`packages/knowledge/src/inference.ts`)
+
+```ts
+class GraphInference {
+  index(userId, now?): Promise<GraphIndex>;              // stated edges, mentions, holdings
+  similarities(idx, { entityId?, min? }): Similarity[];  // 0.6 * Jaccard(neighbours) + 0.4 * Jaccard(memories)
+  impactPaths(idx, sourceId): ImpactPath[];             // shortest chain to each holding, ≤ 3 steps
+  reach(idx, { types? }): ImpactReach[];                // everything ranked by share of cost basis reached
+  refresh(userId, now?): Promise<{ edges; similarities }>; // rebuild inferred similar_to edges
+}
+describePath(source, steps) // "OpenAI depends on NVIDIA, which issues NVDA"
+```
+
+Inferred edges carry `inferred = true` and a `reason`. `InsightEngine.run` refreshes them first.
+
+## Agents and briefings (`apps/web/src/server`)
+
+| Function | Does |
+| --- | --- |
+| `createAgent`, `updateAgent`, `deleteAgent`, `listAgents` | Up to 10 agents per user, `daily` or `weekly` |
+| `runAgent(deps, userId, id)` | `runResearch` with the agent's question; status `unchanged` and no saved note when nothing it uses is new |
+| `runDueAgents(deps, { now, userId?, liveOnly? })` | Claims and runs due agents, then refreshes inference and insights for users with new findings |
+| `runScheduled(deps)` | The cron pass: due agents for live accounts, then their daily briefings |
+| `catchUp(deps, userId)` | Runs after a page is served, at most every ten minutes per user |
+| `gatherBriefing`, `buildBriefing`, `currentBriefing` | Sections and lede for `daily` or `weekly`; rebuilt when older than 30 minutes |
+
+Routes: `GET/POST /api/agents`, `PATCH/DELETE /api/agents/:id`, `POST /api/agents/:id/run`,
+`GET/POST /api/briefing`, `GET/POST /api/scheduler/run` (`Authorization: Bearer $CRON_SECRET`).
+
 ## Insights (`packages/knowledge`)
 
 ```ts

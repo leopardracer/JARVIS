@@ -1,26 +1,29 @@
 import Link from "next/link";
 import { SectionLabel } from "@jarvis/ui";
+import { AgentControls, NewAgentForm } from "@/components/agent-forms";
 import { EmptyState } from "@/components/brand";
 import { ResearchForm } from "@/components/research-form";
 import { PageHeader } from "@/components/shell";
 import { NewThesisForm, StanceBadge } from "@/components/thesis-forms";
 import { pageUser } from "@/server/auth";
+import { listAgents } from "@/server/agents";
 import { services } from "@/server/container";
 import { researchView, thesesView } from "@/server/queries";
-import { formatDate } from "@/lib/format";
+import { formatDate, timeAgo } from "@/lib/format";
 
 export const metadata = { title: "Research" };
 
 export default async function ResearchPage() {
   const user = await pageUser();
   const { db, ai } = await services();
-  const [theses, research] = await Promise.all([thesesView(db, user.id), researchView(db, user.id)]);
+  const [theses, research, agents] = await Promise.all([thesesView(db, user.id), researchView(db, user.id), listAgents(db, user.id)]);
+  const agentName = new Map(agents.map((a) => [a.id, a.name]));
   const active = theses.filter((t) => t.status === "active");
   const closed = theses.filter((t) => t.status !== "active");
 
   return (
     <>
-      <PageHeader index="05 — Research" title="Research" description="Your theses with the evidence for and against them, and research runs that read your memory and save a cited brief back into it." />
+      <PageHeader index="06 — Research" title="Research" description="Your theses with the evidence for and against them, research runs that read your memory and save a cited brief back into it, and agents that repeat a question on a schedule." />
       <div className="space-y-14 px-4 pb-20 sm:px-8">
         <section className="space-y-5">
           <SectionLabel index="01" action={<NewThesisForm />}>Theses</SectionLabel>
@@ -54,17 +57,49 @@ export default async function ResearchPage() {
           </div>
         </section>
 
+        <section id="agents" className="scroll-mt-24 space-y-5">
+          <SectionLabel index="03" action={<NewAgentForm suggestions={["What could hurt my largest position?", "Which of my theses lost support recently?", "What new risks came up in my notes this week?"]} />}>Agents</SectionLabel>
+          {agents.length === 0 ? (
+            <p className="max-w-2xl text-sm text-gray">An agent asks your memory the same question every day or week and saves a brief when something new turned up. Findings flow into your insights and briefing.</p>
+          ) : (
+            <ul className="divide-y divide-line border-y border-line">
+              {agents.map((a) => (
+                <li key={a.id} className="grid gap-3 py-5 sm:grid-cols-[1fr_auto] sm:items-start">
+                  <div className="min-w-0 space-y-1.5">
+                    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="font-medium">{a.name}</span>
+                      <span className="eyebrow text-gray">{a.enabled ? (a.cadence === "daily" ? "Every day" : "Every week") : "Paused"}</span>
+                    </p>
+                    <p className="text-sm text-gray">{a.question}</p>
+                    <p className="eyebrow flex flex-wrap gap-x-4 gap-y-1 text-gray">
+                      <span>{a.lastRunAt ? `Last run ${timeAgo(a.lastRunAt)}` : "Not run yet"}</span>
+                      {a.last ? <span className={a.last.status === "failed" ? "text-danger" : a.last.status === "done" ? "text-cobalt" : ""}>{a.last.status === "done" ? "New brief" : a.last.status === "unchanged" ? "Nothing new" : a.last.status}</span> : null}
+                      {a.enabled ? <span>Next {formatDate(a.nextRunAt)}</span> : null}
+                    </p>
+                    {a.last?.memoryId && a.last.status === "done" ? (
+                      <Link href={`/app/memory?id=${a.last.memoryId}`} className="eyebrow inline-block text-cobalt hover:underline">Read the latest brief</Link>
+                    ) : null}
+                    {a.lastError ? <p className="text-xs text-danger">{a.lastError}</p> : null}
+                  </div>
+                  <AgentControls id={a.id} name={a.name} enabled={a.enabled} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         <section className="space-y-5">
-          <SectionLabel index="03">Research log</SectionLabel>
+          <SectionLabel index="04">Research log</SectionLabel>
           {research.length === 0 ? (
             <p className="text-sm text-gray">No research yet. Ask a question above; the brief is saved to your memory as a research note.</p>
           ) : (
             <ol className="divide-y divide-line border-y border-line">
-              {research.map((r) => (
+              {research.filter((r) => r.status !== "unchanged").map((r) => (
                 <li key={r.id} className="grid gap-2 py-5 sm:grid-cols-[160px_1fr]">
                   <div className="eyebrow space-y-1 text-gray">
                     <p>{formatDate(r.createdAt)}</p>
-                    <p className={r.status === "failed" ? "text-danger" : r.status === "running" ? "text-cobalt" : ""}>{r.status}</p>
+                    <p className={r.status === "failed" ? "text-danger" : r.status === "running" ? "text-cobalt" : ""}>{r.status === "unchanged" ? "nothing new" : r.status}</p>
+                    {r.agentId ? <p className="text-cobalt">Agent · {agentName.get(r.agentId) ?? "removed"}</p> : null}
                     {r.provider ? <p>{r.provider === "mock" ? "offline" : r.provider}</p> : null}
                   </div>
                   <div className="max-w-3xl space-y-2">
