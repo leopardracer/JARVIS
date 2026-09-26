@@ -298,3 +298,35 @@ export const researchRequestSchema = z.object({
 });
 
 export const insightStatusSchema = z.object({ status: z.enum(["new", "seen", "dismissed"]) });
+
+// ---------- Phase 3: actions and connections ----------
+
+const decimal = z
+  .string()
+  .trim()
+  .regex(/^\d+(\.\d{1,8})?$/, "Use a positive number with up to 8 decimals")
+  .refine((v) => Number(v) > 0, "Must be greater than zero");
+
+export const ACTION_SIDES = ["buy", "sell"] as const;
+
+export const createActionSchema = z.object({
+  side: z.enum(ACTION_SIDES),
+  symbol,
+  quantity: z.union([decimal, z.number().positive().transform(String)]),
+  price: z.union([decimal, z.number().positive().transform(String)]).nullish(),
+  reasoning: z.string().trim().min(3, "Say why").max(4000),
+});
+export type CreateActionInput = z.input<typeof createActionSchema>;
+
+export const approveActionSchema = z.object({
+  /** The confirmation phrase the user typed, e.g. "SELL 8.27 NVDA". */
+  phrase: z.string().trim().min(1).max(100),
+});
+
+export const rejectActionSchema = z.object({ reason: z.string().trim().max(1000).optional() });
+
+export const walletConnectionSchema = z.object({
+  address: z.string().trim().regex(/^0x[0-9a-fA-F]{40}$/, "Enter a 0x wallet address"),
+  network: z.enum(["mainnet", "testnet"]).default("mainnet"),
+  label: z.string().trim().max(80).optional(),
+});

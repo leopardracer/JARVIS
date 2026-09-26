@@ -13,6 +13,19 @@ Exact request paths, headers and signing are taken from the official
 documentation when each provider is implemented, and recorded in the provider's
 source with a link. Nothing is implemented from memory.
 
+## Status
+
+| Provider | State |
+| --- | --- |
+| `MockBrokerProvider` | Done. Fictional account; accepts signed paper orders in the demo workspace. |
+| `RobinhoodChainProvider` | Done, read-only. Native ETH balance of a wallet address over JSON-RPC. No private keys are ever asked for. |
+| `RobinhoodCryptoProvider` | Not implemented. The Crypto Trading API reference (request paths, the signed-request scheme) could not be read from docs.robinhood.com when Phase 3 was built, and third-party catalogs are not an acceptable source. Settings lists it as "Not available yet". |
+| Agentic Trading MCP | Not implemented. |
+
+Until an order-capable provider exists, a live approved action is a decision
+record: JARVIS keeps the reasoning and the approval, and the user places the
+order themselves.
+
 ## Provider contract
 
 `BrokerProvider` (see `docs/interfaces.md`) exposes read methods and a single

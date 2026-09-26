@@ -14,6 +14,7 @@ export const NAV = [
   { href: "/app/portfolio", label: "Portfolio" },
   { href: "/app/research", label: "Research" },
   { href: "/app/insights", label: "Insights" },
+  { href: "/app/actions", label: "Actions" },
   { href: "/app/watchlist", label: "Watchlist" },
   { href: "/app/activity", label: "Activity" },
   { href: "/app/settings", label: "Settings" },
@@ -21,7 +22,7 @@ export const NAV = [
 
 type ShellUser = { email: string; displayName: string | null; mode: "demo" | "live" };
 
-export function Shell({ user, children }: { user: ShellUser; children: React.ReactNode }) {
+export function Shell({ user, children, badges = {} }: { user: ShellUser; children: React.ReactNode; badges?: Record<string, number> }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setOpen } = useAsk();
@@ -64,6 +65,11 @@ export function Shell({ user, children }: { user: ShellUser; children: React.Rea
                 {String(i + 1).padStart(2, "0")}
               </span>
               {item.label}
+              {badges[item.href] ? (
+                <span className="tabular ml-auto self-center bg-signal px-1.5 font-mono text-[10px] leading-4 text-ink" aria-label={`${badges[item.href]} waiting for review`}>
+                  {badges[item.href]}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>

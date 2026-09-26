@@ -16,7 +16,7 @@ export default async function WatchlistPage() {
 
   return (
     <>
-      <PageHeader index="07 — Watchlist" title="Watchlist" description="Assets you are watching and what you are watching them for, with how often they come up in your memory and the theses that depend on them." />
+      <PageHeader index="08 — Watchlist" title="Watchlist" description="Assets you are watching and what you are watching them for, with how often they come up in your memory and the theses that depend on them." />
       <div className="space-y-12 px-4 pb-20 sm:px-8">
         <section className="max-w-3xl space-y-3">
           <SectionLabel index="01">Add</SectionLabel>

@@ -16,13 +16,15 @@ CAPTURE → REMEMBER → CONNECT → UNDERSTAND → REASON → INSIGHT → ACTIO
 
 ## Status
 
-Phases 1 and 2 are implemented: accounts, the memory system with exact,
+Phases 1, 2 and 3 are implemented: accounts, the memory system with exact,
 semantic and hybrid search, entity extraction, the knowledge graph and its
 explorer, Ask JARVIS with "Memory used", theses with evidence for and against,
 research runs that save cited briefs back into memory, an explainable insight
 engine, portfolio exposure by theme, watchlist and timeline, and a fictional
-demo workspace synced from a mock brokerage. Robinhood connections and the
-action approval flow are Phase 3. See [docs/milestones.md](docs/milestones.md).
+demo workspace synced from a mock brokerage, and the action flow: JARVIS
+proposes, you approve by typing the order, and a separate step submits it
+(paper fills in the demo). Credentials are encrypted and a read-only Robinhood
+Chain wallet can be connected. See [docs/milestones.md](docs/milestones.md).
 
 ## Quick start
 
@@ -89,7 +91,7 @@ packages/db         Drizzle schema (Postgres + pgvector), client for Postgres or
 packages/ai         AIProvider and EmbeddingProvider: Anthropic, OpenAI, local, offline
 packages/memory     Capture, entity extraction, exact/semantic/hybrid search, demo seed
 packages/knowledge  Entities, relationships, clusters, neighbourhoods
-packages/broker     Robinhood Chain read-only helpers (broker abstraction lands in Phase 3)
+packages/broker     BrokerProvider, mock brokerage, Robinhood Chain, approvals, secrets
 packages/ui         Design system components
 infrastructure      Docker compose and SQL migrations
 docs                Architecture, database, interfaces, Robinhood, milestones

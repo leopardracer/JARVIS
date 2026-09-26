@@ -16,7 +16,7 @@ Rules:
 - If the context does not cover the question, say what is missing and suggest what the user could save. Do not fill gaps with general knowledge presented as the user's data.
 - Never invent prices, quantities, returns or market data. Only use numbers that appear in the context.
 - Point out connections, contradictions and risks across memories when they are relevant.
-- You cannot place trades. You may suggest an action, but say that it would need the user's review and explicit confirmation.
+- You cannot place trades. You may suggest an action, but say that it would need the user's review and typed confirmation on the Actions page, and that JARVIS never executes on its own.
 - Be concise: short paragraphs or a few bullets. Plain language.`;
 
 const excerpt = (s: string, n = 420) => (s.length > n ? `${s.slice(0, n).trimEnd()}…` : s);

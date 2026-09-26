@@ -28,7 +28,7 @@ describe("MockBrokerProvider", () => {
     const broker = new MockBrokerProvider({ now: new Date("2026-06-01T00:00:00Z") });
     expect(broker.dataMode).toBe("demo");
     expect(broker.capabilities().orders).toBe(false);
-    expect("submitOrder" in broker).toBe(false);
+    await expect(broker.submitOrder({} as never)).rejects.toThrow(/not enabled/);
     const positions = await broker.getPositions("demo-account");
     const btc = positions.find((p) => p.symbol === "BTC")!;
     expect(btc.quantity).toBe("0.006");

@@ -96,6 +96,11 @@ const MEMORIES: SeedMemory[] = [
     tags: ["risk", "crypto"],
   },
   {
+    key: "g-size", days: 58, type: "goal", title: "Keep $NVDA under 40% of the portfolio",
+    content: "Position-size rule: no single stock above 40% of cost basis. If one runs past it, trim back to the cap instead of letting it ride.",
+    tags: ["risk", "position-size"],
+  },
+  {
     key: "tr-btc", days: 60, type: "trade", title: "Bought BTC",
     content: "Small $BTC position as a hedge alongside ETH.",
     tags: ["position"],
@@ -179,6 +184,7 @@ export async function seedDemo(db: Database, memory: MemoryService, opts: { emai
     provider: new MockBrokerProvider({ now: opts.now }),
     portfolioEntityId: portfolioEntity.id,
     resolveAsset: async (a) => ent.get(a.symbol) ?? (await k.upsertEntity(userId, { type: "asset", name: a.name, symbol: a.symbol })).id,
+    positionsFromLedger: true,
   });
   for (const fill of DEMO_FILLS) {
     const txId = sync.transactionIds.get(fill.id);

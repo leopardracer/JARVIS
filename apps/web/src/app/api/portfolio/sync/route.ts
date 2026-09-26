@@ -16,6 +16,7 @@ export const POST = handle(async () => {
     userId: user.id,
     provider: demoBroker,
     resolveAsset: async (a) => (await ensureAsset(memory, user.id, a.symbol, a.name)).id,
+    positionsFromLedger: true,
   });
   const added = results.reduce((s, r) => s + r.transactionsAdded, 0);
   await memory.recordActivity(user.id, "portfolio_synced", "portfolio", results[0]?.portfolioId ?? null, `Synced ${demoBroker.name} brokerage: ${added} new transactions`);
