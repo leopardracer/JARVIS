@@ -99,9 +99,14 @@ db → types
 - JARVIS never executes a trade by itself. Every account-changing operation is
   an `action` row that moves through `proposed → approved → executing →
   executed | failed` or `proposed → rejected`. Approval requires an explicit,
-  authenticated user request with a fresh confirmation token.
+  authenticated user request: typing the exact order phrase. Submission is a
+  second, separate request; the approved ticket is HMAC-signed and the
+  provider refuses anything unsigned, expired or changed after approval.
 - Broker credentials are stored encrypted (AES-256-GCM with
-  `JARVIS_ENCRYPTION_KEY`) and only decrypted server-side.
+  `JARVIS_ENCRYPTION_KEY`) and only decrypted server-side. API responses list
+  connections without credentials.
+- Demo accounts cannot add live connections, and live actions are never sent
+  to the demo brokerage.
 - Every financial row carries `data_mode` (`demo` or `live`); the UI labels
   demo data everywhere and live and demo data are never mixed in one view.
 - Every sensitive operation writes an `audit_logs` row.

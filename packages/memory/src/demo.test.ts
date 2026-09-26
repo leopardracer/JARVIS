@@ -23,7 +23,7 @@ describe("demo seed", () => {
     expect(again).toEqual({ userId: first.userId, created: false });
 
     const stats = await svc.stats(first.userId);
-    expect(stats.memories).toBe(17);
+    expect(stats.memories).toBe(18);
     expect(stats.relationships).toBeGreaterThan(30);
 
     const tx = await h.db.select().from(schema.transactions).where(eq(schema.transactions.userId, first.userId));
@@ -48,8 +48,8 @@ describe("demo seed", () => {
     // Insights are computed by the engine, not hardcoded.
     const insights = await h.db.select().from(schema.insights).where(eq(schema.insights.userId, first.userId));
     const kinds = insights.map((i) => i.kind).sort();
-    expect(kinds).toEqual(["concentration", "exposure_change", "goal", "new_connection", "thesis_change", "thesis_change"]);
+    expect(kinds).toEqual(["concentration", "exposure_change", "goal", "goal", "new_connection", "thesis_change", "thesis_change"]);
     expect(insights.every((i) => i.evidence.length > 0 && i.fingerprint)).toBe(true);
-    expect(insights.find((i) => i.kind === "goal")?.title).toBe("Crypto is back inside your 15% cap");
+    expect(insights.filter((i) => i.kind === "goal").map((i) => i.title).sort()).toEqual(["Crypto is back inside your 15% cap", "NVDA is above your 40% cap"]);
   });
 });

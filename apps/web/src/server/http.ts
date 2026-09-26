@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { ProviderConfigError } from "@jarvis/ai";
+import { ApprovalError, SecretsConfigError } from "@jarvis/broker";
 import { AuthError } from "./auth";
 
 import { HttpError } from "./errors";
@@ -18,7 +19,8 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
       }
       if (error instanceof AuthError) return Response.json({ error: error.message }, { status: error.status });
       if (error instanceof HttpError) return Response.json({ error: error.message }, { status: error.status });
-      if (error instanceof ProviderConfigError) return Response.json({ error: error.message }, { status: 503 });
+      if (error instanceof ProviderConfigError || error instanceof SecretsConfigError) return Response.json({ error: error.message }, { status: 503 });
+      if (error instanceof ApprovalError) return Response.json({ error: error.message }, { status: 409 });
       console.error(error);
       return Response.json({ error: "Something went wrong" }, { status: 500 });
     }

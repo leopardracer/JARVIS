@@ -41,7 +41,7 @@ export default async function ActivityPage({ searchParams }: Props) {
 
   return (
     <>
-      <PageHeader index="08 — Activity" title="Timeline" description="Everything that happened in this workspace, newest first: what you saved, traded, believed and asked, and what JARVIS noticed." />
+      <PageHeader index="09 — Activity" title="Timeline" description="Everything that happened in this workspace, newest first: what you saved, traded, believed and asked, and what JARVIS noticed." />
       <div className="space-y-8 px-4 pb-20 sm:px-8">
         <nav className="flex flex-wrap gap-2" aria-label="Filter activity">
           {[undefined, ...Object.keys(ACTIVITY_GROUPS)].map((g) => (

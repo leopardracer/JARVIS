@@ -1,3 +1,4 @@
+import type { ApprovalSigner, ApprovedAction } from "./approval";
 import type {
   BrokerAccount,
   BrokerBalance,
@@ -5,6 +6,7 @@ import type {
   BrokerPosition,
   BrokerProvider,
   BrokerTransaction,
+  OrderResult,
 } from "./types";
 
 const DAY = 86_400_000;
@@ -43,18 +45,40 @@ export function positionsFromFills(fills: BrokerTransaction[]): BrokerPosition[]
     .map(({ cost, qty, ...p }) => ({ ...p, quantity: String(Number(qty.toFixed(8))), averageCost: (cost / qty).toFixed(2) }));
 }
 
-/** Deterministic fictional brokerage account. The default provider (BROKER_PROVIDER=mock). */
+/**
+ * Deterministic fictional brokerage account. The default provider
+ * (BROKER_PROVIDER=mock). With an `ApprovalSigner` it also takes paper
+ * orders: approved demo orders "fill" at the price on the approved ticket.
+ */
 export class MockBrokerProvider implements BrokerProvider {
   readonly name = "mock" as const;
   readonly dataMode = "demo" as const;
   private readonly now: number;
+  private readonly signer?: ApprovalSigner;
 
-  constructor(opts: { now?: Date } = {}) {
+  constructor(opts: { now?: Date; signer?: ApprovalSigner } = {}) {
     this.now = (opts.now ?? new Date()).getTime();
+    this.signer = opts.signer;
   }
 
   capabilities(): BrokerCapabilities {
-    return { positions: true, transactions: true, quotes: false, orders: false };
+    return { positions: true, transactions: true, quotes: false, orders: !!this.signer };
+  }
+
+  async submitOrder(action: ApprovedAction): Promise<OrderResult> {
+    if (!this.signer) throw new Error("Paper orders are not enabled on this mock brokerage");
+    this.signer.verify(action, { provider: this.name, dataMode: this.dataMode });
+    if (!action.price) {
+      return { status: "rejected", externalId: `paper-${action.actionId}`, filledQuantity: null, averagePrice: null, executedAt: new Date(), note: "A paper order needs a price; JARVIS does not invent one." };
+    }
+    return {
+      status: "filled",
+      externalId: `paper-${action.actionId}`,
+      filledQuantity: action.quantity,
+      averagePrice: action.price,
+      executedAt: new Date(),
+      note: "Paper fill in the demo brokerage at the price on the approved ticket. No real order was placed.",
+    };
   }
 
   async getAccounts(): Promise<BrokerAccount[]> {

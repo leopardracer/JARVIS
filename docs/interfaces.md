@@ -84,7 +84,39 @@ interface BrokerProvider {
 ```
 
 `MockBrokerProvider` (Phase 2) returns a fictional account; `syncBrokerAccounts({ db, userId, provider, resolveAsset })`
-imports it idempotently (transactions keyed by the provider's id, positions replaced with the provider's view).
+imports it idempotently (transactions keyed by the provider's id, positions replaced with the provider's view,
+or rebuilt from the ledger with `positionsFromLedger: true`).
+
+### Approvals (Phase 3)
+
+```ts
+type OrderTicket = { actionId; userId; provider; dataMode; side; symbol; quantity; price: string | null };
+class ApprovalSigner {
+  sign(ticket: OrderTicket, expiresAt: Date): ApprovedAction;   // HMAC-SHA256, HKDF subkey "approvals"
+  verify(action: ApprovedAction, expect: { provider; dataMode }, now?): OrderTicket; // throws ApprovalError
+}
+```
+
+`apps/web/src/server/actions.ts` is the only caller of `sign`, and only for an action whose latest approval
+matches the stored `confirmationHash` and has not expired. Providers call `verify` before they act.
+
+| Step | Function | Needs |
+| --- | --- | --- |
+| Propose | `createAction`, `suggestActions` | a signed-in user; model output only ever becomes a proposal |
+| Approve | `approveAction(id, phrase)` | the exact phrase, e.g. `SELL 8.27 NVDA` |
+| Submit | `executeAction(id)` | a fresh approval and an order-capable provider (only the demo brokerage today) |
+| Reject | `rejectAction(id, reason?)` | a proposed or approved action |
+
+### Secrets
+
+`SecretBox` seals JSON with AES-256-GCM under an HKDF subkey of `JARVIS_ENCRYPTION_KEY` (32 bytes, base64).
+Production refuses to start connection or order features without it (HTTP 503 on those routes only); development
+creates `.jarvis-data/dev-encryption.key` with mode 0600.
+
+### Robinhood Chain
+
+`RobinhoodChainProvider(address, network)` reads the wallet's native ETH balance over the public JSON-RPC
+(`ROBINHOOD_RPC_URL_MAINNET` / `_TESTNET` override it). It reports no cost basis and cannot place orders.
 
 ## Insights (`packages/knowledge`)
 

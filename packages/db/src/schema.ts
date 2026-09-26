@@ -445,7 +445,31 @@ export const messages = pgTable(
   (t) => [index("messages_conversation_idx").on(t.conversationId, t.createdAt)],
 );
 
-// ---------- Actions (Phase 3 flows; schema defined now) ----------
+// ---------- Actions and connections ----------
+
+export const brokerConnections = pgTable(
+  "broker_connections",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    label: text("label"),
+    /** AES-256-GCM sealed JSON. Decrypted on the server only, never returned by the API. */
+    encryptedCredentials: text("encrypted_credentials").notNull(),
+    /** Non-secret details safe to show, e.g. a public wallet address. */
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    dataMode: dataMode("data_mode").notNull(),
+    status: text("status").notNull().default("active"), // active | error | revoked
+    portfolioId: uuid("portfolio_id").references(() => portfolios.id, { onDelete: "set null" }),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("broker_connections_user_idx").on(t.userId)],
+);
 
 export const actions = pgTable(
   "actions",
@@ -454,18 +478,24 @@ export const actions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").notNull(), // buy | sell | ...
+    type: text("type").notNull(), // buy | sell
     assetEntityId: uuid("asset_entity_id").references(() => entities.id, {
       onDelete: "set null",
     }),
     quantity: money("quantity"),
+    /** Limit or illustrative price the user entered or JARVIS took from a known fill. Never a fetched market price. */
     estimatedPrice: money("estimated_price"),
     reasoning: text("reasoning").notNull(),
     context: jsonb("context").$type<Record<string, unknown>>().notNull().default({}),
     dataMode: dataMode("data_mode").notNull(),
     provider: text("provider").notNull(),
-    approvalStatus: text("approval_status").notNull().default("proposed"),
-    executionStatus: text("execution_status").notNull().default("not_started"),
+    connectionId: uuid("connection_id").references(() => brokerConnections.id, { onDelete: "set null" }),
+    insightId: uuid("insight_id").references(() => insights.id, { onDelete: "set null" }),
+    approvalStatus: text("approval_status").notNull().default("proposed"), // proposed | approved | rejected | expired
+    executionStatus: text("execution_status").notNull().default("not_started"), // not_started | executing | executed | failed
+    executionResult: jsonb("execution_result").$type<Record<string, unknown>>().notNull().default({}),
+    transactionId: uuid("transaction_id").references(() => transactions.id, { onDelete: "set null" }),
+    executedAt: timestamp("executed_at", { withTimezone: true }),
     proposedBy: text("proposed_by").notNull(), // ai | user
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: createdAt(),
@@ -474,28 +504,25 @@ export const actions = pgTable(
   (t) => [index("actions_user_idx").on(t.userId, t.approvalStatus)],
 );
 
-export const actionApprovals = pgTable("action_approvals", {
-  id: id(),
-  actionId: uuid("action_id")
-    .notNull()
-    .references(() => actions.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  decision: text("decision").notNull(), // approved | rejected
-  confirmationHash: text("confirmation_hash"),
-  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const brokerConnections = pgTable("broker_connections", {
-  id: id(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  provider: text("provider").notNull(),
-  encryptedCredentials: text("encrypted_credentials").notNull(),
-  dataMode: dataMode("data_mode").notNull(),
-  status: text("status").notNull().default("active"),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const actionApprovals = pgTable(
+  "action_approvals",
+  {
+    id: id(),
+    actionId: uuid("action_id")
+      .notNull()
+      .references(() => actions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    decision: text("decision").notNull(), // approved | rejected
+    /** The exact phrase the user typed to confirm. */
+    phrase: text("phrase"),
+    /** sha256 over the action's fields at the moment of approval. */
+    confirmationHash: text("confirmation_hash"),
+    reason: text("reason"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Submission must happen before this, or the user approves again. */
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+  },
+  (t) => [index("action_approvals_action_idx").on(t.actionId)],
+);

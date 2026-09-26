@@ -1,7 +1,9 @@
+import type { ApprovedAction } from "./approval";
+
 /**
- * The contract every brokerage integration implements. Read methods only in
- * Phase 2; order submission arrives with the approval flow in Phase 3.
- * See docs/interfaces.md and docs/robinhood.md.
+ * The contract every brokerage integration implements. Orders go through
+ * `submitOrder`, which accepts only an `ApprovedAction` signed after the user
+ * confirmed it. See docs/interfaces.md and docs/robinhood.md.
  */
 export type BrokerDataMode = "demo" | "live";
 
@@ -58,6 +60,16 @@ export type Quote = {
   source: string;
 };
 
+export type OrderResult = {
+  status: "filled" | "accepted" | "rejected";
+  externalId: string;
+  filledQuantity: string | null;
+  averagePrice: string | null;
+  executedAt: Date;
+  /** Shown next to the result, e.g. "Paper fill at your illustrative price". */
+  note: string;
+};
+
 export interface BrokerProvider {
   readonly name: "mock" | "robinhood-crypto" | "robinhood-chain";
   readonly dataMode: BrokerDataMode;
@@ -67,4 +79,5 @@ export interface BrokerProvider {
   getBalances(accountId: string): Promise<BrokerBalance[]>;
   getTransactions(accountId: string, since?: Date): Promise<BrokerTransaction[]>;
   getQuote?(symbol: string): Promise<Quote>;
+  submitOrder?(action: ApprovedAction): Promise<OrderResult>;
 }

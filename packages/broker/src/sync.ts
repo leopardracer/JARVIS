@@ -1,6 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { schema, type Database } from "@jarvis/db";
-import type { BrokerAsset, BrokerProvider } from "./types";
+import { positionsFromFills } from "./mock";
+import type { BrokerAsset, BrokerProvider, BrokerTransaction } from "./types";
 
 export type SyncResult = {
   portfolioId: string;
@@ -19,6 +20,11 @@ export type SyncOptions = {
   resolveAsset: (asset: BrokerAsset) => Promise<string>;
   /** Graph entity that represents the portfolio, if the caller keeps one. */
   portfolioEntityId?: string;
+  /**
+   * Rebuild positions from the stored transactions instead of the provider's
+   * view. Used for the demo brokerage, whose ledger also holds paper orders.
+   */
+  positionsFromLedger?: boolean;
 };
 
 /**
@@ -92,20 +98,55 @@ export async function syncBrokerAccounts(opts: SyncOptions): Promise<SyncResult[
       }
     }
 
-    const positions = await provider.getPositions(account.id);
-    await db.delete(schema.positions).where(eq(schema.positions.portfolioId, portfolio.id));
-    for (const p of positions) {
-      await db.insert(schema.positions).values({
-        portfolioId: portfolio.id,
-        assetEntityId: await assetId(p),
-        quantity: p.quantity,
-        averageCost: p.averageCost,
-        currency: p.currency,
-        asOf: syncedAt,
-      });
+    let positionCount: number;
+    if (opts.positionsFromLedger) {
+      positionCount = await rebuildPositionsFromLedger(db, portfolio.id);
+    } else {
+      const positions = await provider.getPositions(account.id);
+      await db.delete(schema.positions).where(eq(schema.positions.portfolioId, portfolio.id));
+      for (const p of positions) {
+        await db.insert(schema.positions).values({
+          portfolioId: portfolio.id,
+          assetEntityId: await assetId(p),
+          quantity: p.quantity,
+          averageCost: p.averageCost,
+          currency: p.currency,
+          asOf: syncedAt,
+        });
+      }
+      positionCount = positions.length;
     }
 
-    results.push({ portfolioId: portfolio.id, accountId: account.id, transactionsAdded: added, positions: positions.length, transactionIds });
+    results.push({ portfolioId: portfolio.id, accountId: account.id, transactionsAdded: added, positions: positionCount, transactionIds });
   }
   return results;
+}
+
+/** Replace a portfolio's positions with average-cost positions replayed from its transactions. */
+export async function rebuildPositionsFromLedger(db: Database, portfolioId: string): Promise<number> {
+  const rows = await db
+    .select()
+    .from(schema.transactions)
+    .where(eq(schema.transactions.portfolioId, portfolioId))
+    .orderBy(asc(schema.transactions.executedAt));
+  // The asset entity id stands in for the symbol so positions map straight back to entities.
+  const fills: BrokerTransaction[] = rows.map((r) => ({
+    id: r.id,
+    symbol: r.assetEntityId,
+    name: r.assetEntityId,
+    assetClass: "equity",
+    side: r.side as BrokerTransaction["side"],
+    quantity: r.quantity,
+    price: r.price,
+    fees: r.fees,
+    currency: r.currency,
+    executedAt: r.executedAt,
+  }));
+  const positions = positionsFromFills(fills);
+  await db.delete(schema.positions).where(eq(schema.positions.portfolioId, portfolioId));
+  const asOf = new Date();
+  for (const p of positions) {
+    await db.insert(schema.positions).values({ portfolioId, assetEntityId: p.symbol, quantity: p.quantity, averageCost: p.averageCost, currency: p.currency, asOf });
+  }
+  return positions.length;
 }

@@ -32,7 +32,7 @@ export function migrationsFolder(): string {
   );
 }
 
-function findRepoRoot(): string {
+export function findRepoRoot(): string {
   // Works from the repo root, apps/web and packages/* alike.
   let dir = process.cwd();
   for (let i = 0; i < 4; i++) {

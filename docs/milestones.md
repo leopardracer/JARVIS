@@ -29,11 +29,18 @@
 - [x] Watchlist: add by ticker, notes, mentions, holdings and theses per asset
 - [x] Activity timeline grouped by day with filters
 
-## Phase 3: broker and actions
+## Phase 3: broker and actions (done)
 
-`BrokerProvider` implementations for the documented Robinhood interfaces,
-encrypted credential storage, action proposals from the reasoning layer,
-review and confirmation flow, audit log UI.
+- [x] Actions: proposals from JARVIS (rule-based from goal breaches; the language model adds more when configured) and by hand
+- [x] Review page: the order, the reasoning and evidence, the effect on theme exposure, the insight behind it
+- [x] Approval by typing the exact phrase (`SELL 8.27 NVDA`); a SHA-256 hash of the approved fields is stored; approvals expire after 15 minutes, proposals after 72 hours
+- [x] Submission is a separate step: the approved ticket is HMAC-signed and the provider verifies it before acting; any change after approval is refused
+- [x] Demo brokerage accepts signed tickets as paper fills; the fill is saved as a trade memory and a transaction, and positions are rebuilt from the ledger
+- [x] Live mode keeps approved actions as decision records; nothing is submitted without an order-capable, documented brokerage
+- [x] Encrypted secrets (`SecretBox`, AES-256-GCM, key from `JARVIS_ENCRYPTION_KEY`); credentials are never returned to the browser
+- [x] Robinhood Chain wallet connection (read-only native balance) with sync, status and disconnect
+- [x] Audit log page with filters; every action, approval, submission and connection change is logged
+- [ ] Robinhood Crypto Trading API provider: waiting on the official request and signing reference (see `docs/robinhood.md`)
 
 ## Phase 4: intelligence
 
