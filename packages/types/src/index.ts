@@ -132,6 +132,9 @@ export type GraphEdge = {
   type: RelationshipType;
   weight: number;
   createdAt: string;
+  /** Proposed by graph inference, not stated in a memory. */
+  inferred?: boolean;
+  reason?: string | null;
 };
 
 export type GraphCluster = { id: string; label: string; size: number };
@@ -330,3 +333,18 @@ export const walletConnectionSchema = z.object({
   network: z.enum(["mainnet", "testnet"]).default("mainnet"),
   label: z.string().trim().max(80).optional(),
 });
+
+export const AGENT_CADENCES = ["daily", "weekly"] as const;
+export type AgentCadence = (typeof AGENT_CADENCES)[number];
+
+export const createAgentSchema = z.object({
+  name: z.string().trim().min(2, "Name the agent").max(80),
+  question: z.string().trim().min(8, "Ask a full question").max(500),
+  cadence: z.enum(AGENT_CADENCES).default("weekly"),
+});
+export type CreateAgentInput = z.input<typeof createAgentSchema>;
+
+export const updateAgentSchema = createAgentSchema.partial().extend({ enabled: z.boolean().optional() });
+
+export const BRIEFING_PERIODS = ["daily", "weekly"] as const;
+export type BriefingPeriod = (typeof BRIEFING_PERIODS)[number];

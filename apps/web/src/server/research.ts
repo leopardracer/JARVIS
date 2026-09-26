@@ -39,11 +39,23 @@ function offlineBrief(sources: ContextSource[]): string {
  * on the research row and saved back into memory as a research note, so the
  * next question can build on it.
  */
-export async function runResearch(deps: Deps, userId: string, query: string): Promise<ResearchRow> {
+export async function runResearch(
+  deps: Deps,
+  userId: string,
+  query: string,
+  opts: {
+    /** The scheduled agent running this question. */
+    agentId?: string;
+    /** Skip the brief when no memory it would use changed after this moment. */
+    unchangedSince?: Date | null;
+    /** The agent's own earlier briefs, which are not news to it. */
+    ignoreMemoryIds?: Set<string>;
+  } = {},
+): Promise<ResearchRow> {
   const { db, ai, memory } = deps;
   const [row] = await db
     .insert(schema.research)
-    .values({ userId, query, status: "running", provider: ai.name, model: ai.model })
+    .values({ userId, query, status: "running", provider: ai.name, model: ai.model, agentId: opts.agentId ?? null })
     .returning();
 
   try {
@@ -58,6 +70,18 @@ export async function runResearch(deps: Deps, userId: string, query: string): Pr
         .where(eq(schema.research.id, row.id))
         .returning();
       return done;
+    }
+
+    const since = opts.unchangedSince;
+    const fresh = mems.filter((m) => !opts.ignoreMemoryIds?.has(m.id) && new Date(m.createdAt).getTime() > (since?.getTime() ?? 0));
+    if (since && !fresh.length) {
+      // Nothing new to reason about: say so instead of saving the same brief again.
+      const [same] = await db
+        .update(schema.research)
+        .set({ status: "unchanged", summary: `No new memories on this since ${since.toISOString().slice(0, 10)}. The last brief still stands.`, sources, provider: null, model: null })
+        .where(eq(schema.research.id, row.id))
+        .returning();
+      return same;
     }
 
     const summary = ai.isLanguageModel
@@ -75,15 +99,15 @@ export async function runResearch(deps: Deps, userId: string, query: string): Pr
       type: "research",
       title: `Research: ${query.slice(0, 180)}`,
       content: `${summary}\n\nSources:\n${sources.map((s) => `[${s.ref}] ${s.title}`).join("\n")}`,
-      source: "jarvis-research",
-      tags: ["research"],
+      source: opts.agentId ? "jarvis-agent" : "jarvis-research",
+      tags: opts.agentId ? ["research", "agent"] : ["research"],
     });
     const [done] = await db
       .update(schema.research)
       .set({ status: "done", summary, sources, memoryId: note.id })
       .where(eq(schema.research.id, row.id))
       .returning();
-    await memory.recordActivity(userId, "research", "research", row.id, `Researched: ${query.slice(0, 140)}`);
+    await memory.recordActivity(userId, "research", "research", row.id, `${opts.agentId ? "Agent researched" : "Researched"}: ${query.slice(0, 140)}`);
     return done;
   } catch (error) {
     console.error("Research run failed", error);

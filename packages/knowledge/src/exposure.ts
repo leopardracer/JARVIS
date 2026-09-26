@@ -80,7 +80,7 @@ export async function themesForAssets(db: Database, userId: string, assetIds: st
   const edges = await db
     .select({ s: relationships.sourceId, t: relationships.targetId, type: relationships.type })
     .from(relationships)
-    .where(and(eq(relationships.userId, userId), inArray(relationships.type, [...THEME_EDGES] as never[])));
+    .where(and(eq(relationships.userId, userId), eq(relationships.inferred, false), inArray(relationships.type, [...THEME_EDGES] as never[])));
   const adj = new Map<string, Set<string>>();
   for (const e of edges) {
     if (!adj.has(e.s)) adj.set(e.s, new Set());

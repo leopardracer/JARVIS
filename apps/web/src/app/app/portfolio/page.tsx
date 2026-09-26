@@ -21,7 +21,7 @@ export default async function PortfolioPage() {
   return (
     <>
       <PageHeader
-        index="04 — Portfolio"
+        index="05 — Portfolio"
         title="Portfolio"
         description="Positions and trades, linked to the memories and theses behind them. JARVIS measures on cost basis; it does not show market prices it cannot source."
         actions={

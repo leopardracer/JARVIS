@@ -9,6 +9,7 @@ import { useAsk } from "./ask";
 
 export const NAV = [
   { href: "/app", label: "Overview" },
+  { href: "/app/briefing", label: "Briefing" },
   { href: "/app/memory", label: "Memory" },
   { href: "/app/graph", label: "Knowledge Graph" },
   { href: "/app/portfolio", label: "Portfolio" },

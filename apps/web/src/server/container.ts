@@ -4,6 +4,7 @@ import { createAIProvider, createEmbeddingProvider, MockProvider, type AIProvide
 import { createDatabase, databaseConfigFromEnv, findRepoRoot, type DatabaseHandle } from "@jarvis/db";
 import { MemoryService, seedDemo } from "@jarvis/memory";
 import { suggestActions } from "./actions";
+import { createAgent, runAgent } from "./agents";
 import path from "node:path";
 import { ApprovalSigner, createBrokerProvider, masterKeyFromEnv, SecretBox, type BrokerProvider } from "@jarvis/broker";
 import { InsightEngine, type KnowledgeService } from "@jarvis/knowledge";
@@ -25,6 +26,11 @@ export type Services = {
   /** Builds a fresh, private demo workspace from the fictional seed. */
   createDemoWorkspace: () => Promise<string>;
 };
+
+const DEMO_AGENTS = [
+  { name: "Export-rule watch", question: "What could hurt my chip positions if export rules tighten?", cadence: "weekly" as const },
+  { name: "Crypto cap check", question: "Is crypto still inside my 15% cap, and what is pushing it?", cadence: "daily" as const },
+];
 
 const globalForJarvis = globalThis as unknown as { jarvis?: Promise<Services> };
 
@@ -68,7 +74,14 @@ async function boot(): Promise<Services> {
       const { userId } = await seedDemo(database.db, seeder, { email });
       // The demo opens with JARVIS's own proposals waiting for review, never executed.
       // Rule-based only, like the rest of the seed, so a demo visit costs no model calls.
-      await suggestActions({ db: database.db, memory: seeder, ai: new MockProvider(), get signer() { return keyring().signer; } }, userId);
+      const offline = new MockProvider();
+      await suggestActions({ db: database.db, memory: seeder, ai: offline, get signer() { return keyring().signer; } }, userId);
+      // Two research agents that have already run once, so the briefing has something from them.
+      const insights = new InsightEngine(database.db);
+      for (const a of DEMO_AGENTS) {
+        const agent = await createAgent(database.db, userId, a);
+        await runAgent({ db: database.db, memory: seeder, ai: offline, insights }, userId, agent.id);
+      }
       return userId;
     },
   };

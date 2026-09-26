@@ -16,7 +16,7 @@ CAPTURE → REMEMBER → CONNECT → UNDERSTAND → REASON → INSIGHT → ACTIO
 
 ## Status
 
-Phases 1, 2 and 3 are implemented: accounts, the memory system with exact,
+All four phases are implemented: accounts, the memory system with exact,
 semantic and hybrid search, entity extraction, the knowledge graph and its
 explorer, Ask JARVIS with "Memory used", theses with evidence for and against,
 research runs that save cited briefs back into memory, an explainable insight
@@ -24,7 +24,10 @@ engine, portfolio exposure by theme, watchlist and timeline, and a fictional
 demo workspace synced from a mock brokerage, and the action flow: JARVIS
 proposes, you approve by typing the order, and a separate step submits it
 (paper fills in the demo). Credentials are encrypted and a read-only Robinhood
-Chain wallet can be connected. See [docs/milestones.md](docs/milestones.md).
+Chain wallet can be connected. Phase 4 adds graph inference (look-alikes and
+impact paths to your holdings), research agents that re-ask a question every
+day or week, and personalised daily and weekly briefings. See
+[docs/milestones.md](docs/milestones.md).
 
 ## Quick start
 

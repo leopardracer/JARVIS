@@ -8,7 +8,7 @@ export const metadata = { title: "Memory" };
 export default function MemoryPage() {
   return (
     <>
-      <PageHeader index="02 — Memory" title="Memory" description="Everything you have told JARVIS: notes, theses, trades, research and events. Search by words, by meaning, or both." />
+      <PageHeader index="03 — Memory" title="Memory" description="Everything you have told JARVIS: notes, theses, trades, research and events. Search by words, by meaning, or both." />
       <Suspense fallback={<Skeleton className="mx-8 h-96" />}>
         <MemoryBrowser />
       </Suspense>

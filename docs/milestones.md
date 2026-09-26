@@ -42,7 +42,12 @@
 - [x] Audit log page with filters; every action, approval, submission and connection change is logged
 - [ ] Robinhood Crypto Trading API provider: waiting on the official request and signing reference (see `docs/robinhood.md`)
 
-## Phase 4: intelligence
+## Phase 4: intelligence (done)
 
-Scheduled research agents, deeper graph inference (similarity, causal chains),
-personalised briefings.
+- [x] Graph inference: look-alike pairs from shared neighbours (60%) and shared memories (40%); unlinked pairs are stored as dotted, inferred `similar_to` edges with the reason, rebuilt on every insight run and never mixed into facts (exposure, stats, new-connection detection)
+- [x] Impact paths: the shortest chain of stated links (at most three steps) from any company, person, protocol or scenario to each holding, preferring dependencies and issuers over loose links; shown as a share of cost basis in the graph sidebar
+- [x] Two new insight kinds: `second_order` (something no holding links to directly reaches 25%+ of the portfolio) and `similarity` (two unlinked look-alikes behind your holdings)
+- [x] Research agents: a question asked of your memory every day or week; a brief is saved only when something it relies on is new; findings refresh inference and insights
+- [x] Scheduling without infrastructure: agents catch up after a page is served when their turn has passed; `POST /api/scheduler/run` with `CRON_SECRET` runs them for live accounts from any cron; each run is claimed first so two schedulers never run one agent twice
+- [x] Briefings, daily and weekly: decisions waiting, what changed, agent findings, new links in the graph and what you have been writing about; ordered by portfolio share, attention and conviction; a lede written by rules, or by the language model from the items only; one per period, with history
+- [x] Overview opens with this week's briefing

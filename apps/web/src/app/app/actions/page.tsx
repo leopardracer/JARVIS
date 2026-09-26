@@ -24,7 +24,7 @@ export default async function ActionsPage() {
   return (
     <>
       <PageHeader
-        index="07 — Actions"
+        index="08 — Actions"
         title="Actions"
         description="Trades JARVIS or you proposed. Nothing runs on its own: each one needs your review, a typed confirmation, and a separate submit."
         actions={<SuggestActionsButton />}

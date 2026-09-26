@@ -1,5 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import {
+  boolean,
   customType,
   index,
   integer,
@@ -14,6 +15,7 @@ import {
   uniqueIndex,
   uuid,
   vector,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import {
   DATA_MODES,
@@ -198,6 +200,10 @@ export const relationships = pgTable(
     memoryId: uuid("memory_id").references(() => memories.id, {
       onDelete: "set null",
     }),
+    /** Proposed by graph inference rather than stated in a memory; rebuilt on every inference run. */
+    inferred: boolean("inferred").notNull().default(false),
+    /** Why inference proposed the edge, in words the user can check. */
+    reason: text("reason"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -339,8 +345,10 @@ export const research = pgTable(
     sources: jsonb("sources").$type<{ title: string; url?: string; memoryId?: string; ref?: string }[]>().notNull().default([]),
     provider: text("provider"),
     model: text("model"),
-    status: text("status").notNull().default("pending"), // pending | running | done | failed
+    status: text("status").notNull().default("pending"), // pending | running | done | unchanged | failed
     memoryId: uuid("memory_id").references(() => memories.id, { onDelete: "set null" }),
+    /** Set when a scheduled research agent ran this, not the user. */
+    agentId: uuid("agent_id").references((): AnyPgColumn => agents.id, { onDelete: "set null" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -525,4 +533,62 @@ export const actionApprovals = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }),
   },
   (t) => [index("action_approvals_action_idx").on(t.actionId)],
+);
+
+// ---------- Agents and briefings ----------
+
+export const agents = pgTable(
+  "agents",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** The research question the agent asks of the user's memory on every run. */
+    question: text("question").notNull(),
+    cadence: text("cadence").notNull(), // daily | weekly
+    enabled: boolean("enabled").notNull().default(true),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull(),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    lastResearchId: uuid("last_research_id").references((): AnyPgColumn => research.id, { onDelete: "set null" }),
+    lastError: text("last_error"),
+    runCount: integer("run_count").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("agents_user_idx").on(t.userId), index("agents_due_idx").on(t.enabled, t.nextRunAt)],
+);
+
+export type BriefingItem = {
+  /** What the item is about, e.g. "trade", "insight", "exposure". */
+  kind?: string;
+  text: string;
+  detail?: string;
+  href?: string;
+  memoryId?: string;
+  entityIds?: string[];
+  /** Personal relevance used for ordering: portfolio share, attention and conviction. */
+  score: number;
+};
+export type BriefingSection = { key: string; title: string; items: BriefingItem[] };
+
+export const briefings = pgTable(
+  "briefings",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    period: text("period").notNull(), // daily | weekly
+    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    lede: text("lede").notNull(),
+    sections: jsonb("sections").$type<BriefingSection[]>().notNull().default([]),
+    provider: text("provider"),
+    model: text("model"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("briefings_user_period_idx").on(t.userId, t.period, t.periodStart)],
 );

@@ -31,7 +31,7 @@ export default async function InsightsPage({ searchParams }: Props) {
   return (
     <>
       <PageHeader
-        index="06 — Insights"
+        index="07 — Insights"
         title="Insights"
         description="What changed, why it matters, and the memories that show it. Each insight is computed from your own memory, graph and trades, never from market data it cannot source."
         actions={<RunInsightsButton />}

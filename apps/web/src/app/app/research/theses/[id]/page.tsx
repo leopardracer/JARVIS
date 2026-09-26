@@ -29,7 +29,7 @@ export default async function ThesisPage({ params }: Props) {
   return (
     <>
       <PageHeader
-        index="05 — Research / Thesis"
+        index="06 — Research / Thesis"
         title={t.title}
         description={
           <span className="flex flex-wrap items-center gap-2">

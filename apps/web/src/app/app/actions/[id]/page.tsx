@@ -34,7 +34,7 @@ export default async function ActionPage({ params }: Props) {
   return (
     <>
       <PageHeader
-        index="07 — Actions / Review"
+        index="08 — Actions / Review"
         title={a.phrase}
         description={
           <span className="flex flex-wrap items-center gap-2">
