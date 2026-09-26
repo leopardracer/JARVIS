@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, GitBranch } from "lucide-react";
 import { buttonVariants, cn } from "@jarvis/ui";
 import { Mascot, Wordmark } from "@/components/brand";
 
 const LOOP = ["Capture", "Remember", "Connect", "Understand", "Reason", "Insight", "Action", "Remember"];
+
+const REPO = "https://github.com/leopardracer/JARVIS";
 
 export default function LandingPage() {
   return (
@@ -17,11 +19,12 @@ export default function LandingPage() {
           <div className="hidden gap-6 text-sm md:flex">
             <a href="#memory" className="hover:text-cobalt">Memory</a>
             <a href="#graph" className="hover:text-cobalt">Graph</a>
-            <a href="#robinhood" className="hover:text-cobalt">Robinhood</a>
-            <a href="#how" className="hover:text-cobalt">How it works</a>
+            <a href="#briefing" className="hover:text-cobalt">Briefing</a>
+            <a href="#actions" className="hover:text-cobalt">Actions</a>
+            <a href="#open-source" className="hover:text-cobalt">Open source</a>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>Sign in</Link>
+            <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden sm:inline-flex")}>Sign in</Link>
             <Link href="/login" className={buttonVariants({ size: "sm" })}>Try the demo</Link>
           </div>
         </div>
@@ -29,21 +32,24 @@ export default function LandingPage() {
 
       <main className="mx-auto max-w-[1400px] px-4 sm:px-8">
         {/* 01 Hero */}
-        <section className="grid gap-10 pb-16 pt-12 lg:grid-cols-12 lg:pt-20">
+        <section className="grid grid-cols-1 gap-10 pb-16 pt-12 lg:grid-cols-12 lg:pt-20">
           <div className="space-y-8 lg:col-span-9">
             <p className="eyebrow text-gray">JARVIS — Your financial second brain</p>
             <h1 className="display text-[clamp(3rem,8.5vw,8.5rem)]">
               Remember everything. Connect the dots. <span className="text-cobalt">Act with context.</span>
             </h1>
-            <p className="max-w-xl text-lg leading-relaxed text-gray">
-              JARVIS keeps your notes, theses, research and trades in one memory, links them into a living knowledge graph, and answers with the sources it used.
+            <p className="max-w-2xl text-lg leading-relaxed text-gray">
+              JARVIS keeps your notes, theses, research and trades in one memory, links them into a knowledge graph, and tells you what changed, what it touches in your portfolio, and why, with the sources it used. It proposes; you decide.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/login" className={buttonVariants({ size: "lg" })}>
                 Explore the demo <ArrowRight />
               </Link>
-              <a href="#how" className={buttonVariants({ variant: "outline", size: "lg" })}>How it works</a>
+              <a href={REPO} className={buttonVariants({ variant: "outline", size: "lg" })}>
+                <GitBranch /> Source on GitHub
+              </a>
             </div>
+            <p className="eyebrow text-gray">Open source · runs offline with no keys · never trades on its own</p>
           </div>
           <div className="hidden items-end justify-end lg:col-span-3 lg:flex">
             <Mascot size={300} priority />
@@ -71,18 +77,36 @@ export default function LandingPage() {
         </Feature>
 
         {/* 03 Knowledge graph */}
-        <Feature id="graph" index="03" title="Knowledge graph" lede="Companies, assets, people, protocols, themes and events become nodes. How they relate becomes edges: supports, contradicts, depends on, invested in.">
-          <Shot src="/screenshots/graph.png" alt="The JARVIS knowledge graph with NVIDIA selected and its connections highlighted" />
+        <Feature
+          id="graph"
+          index="03"
+          title="Knowledge graph"
+          lede="Companies, assets, people, themes and events become nodes; how they relate becomes edges. Then JARVIS infers what you never linked yourself."
+        >
+          <Shot src="/screenshots/graph.png" alt="The knowledge graph focused on OpenAI, with the chains that reach NVDA and AMD in the sidebar" />
+          <div className="grid gap-px border border-line bg-line sm:grid-cols-2">
+            <div className="space-y-2 bg-white p-5">
+              <p className="eyebrow text-cobalt">Impact paths</p>
+              <p className="font-medium">OpenAI depends on NVIDIA, which issues NVDA.</p>
+              <p className="text-sm text-gray">The shortest chain of your own links from any company or scenario to each holding, as a share of cost basis.</p>
+            </div>
+            <div className="space-y-2 bg-white p-5">
+              <p className="eyebrow text-cobalt">Look-alikes</p>
+              <p className="font-medium">NVIDIA and Advanced Micro Devices look alike.</p>
+              <p className="text-sm text-gray">Shared neighbours and shared memories, drawn as dotted edges with the reason. Positions tied to look-alikes add up rather than diversify.</p>
+            </div>
+          </div>
         </Feature>
 
-        {/* 04 AI research */}
-        <Feature index="04" title="AI research, grounded in you" lede="Before JARVIS answers, it retrieves. Every answer shows the memories and graph entities it used, so you can check the reasoning.">
+        {/* 04 Research and agents */}
+        <Feature index="04" title="Research and agents" lede="Before JARVIS answers, it retrieves. Agents ask your memory the same question every day or week and speak up only when something new turned up.">
           <ul className="space-y-3 text-sm">
             {[
               "Retrieval before reasoning: hybrid search plus graph neighbours.",
               "Citations on every claim, linked back to the memory.",
-              "Runs on Anthropic, OpenAI or a local model. Works offline without one.",
-              "Never fills gaps with invented numbers.",
+              "Theses track the evidence for and against them, and every conviction change is remembered.",
+              "Agents run when you open JARVIS or from any cron. They read your memory only; no prices, no news, no trades.",
+              "Runs on Anthropic, OpenAI or a local model. Works offline without one, and never fills gaps with invented numbers.",
             ].map((t) => (
               <li key={t} className="flex gap-3 border-t border-line pt-3">
                 <Check className="mt-0.5 size-4 shrink-0 text-cobalt" /> {t}
@@ -91,56 +115,115 @@ export default function LandingPage() {
           </ul>
         </Feature>
 
-        {/* 05 Financial context */}
-        <Feature index="05" title="Financial context" lede="Positions, transactions, watchlists and theses live next to the notes that explain them. A trade remembers why you made it.">
-          <div className="border border-line">
-            <div className="eyebrow grid grid-cols-[1fr_auto_auto] gap-6 border-b border-line bg-surface px-4 py-2 text-gray">
-              <span>Position</span><span>Thesis</span><span>Evidence</span>
-            </div>
-            {[
-              ["NVDA", "AI infrastructure spend is still early", "1 for · 2 against"],
-              ["AMD", "AMD takes share in inference", "1 for · 2 against"],
-              ["ETH", "Ether as a settlement layer", "1 for · 0 against"],
-            ].map(([a, t, e]) => (
-              <div key={a} className="grid grid-cols-[56px_1fr_auto] items-baseline gap-6 border-b border-line px-4 py-3 text-sm last:border-b-0">
-                <span className="font-mono">{a}</span>
-                <span>{t}</span>
-                <span className="eyebrow text-gray">{e}</span>
+        {/* 05 Briefing */}
+        <Feature
+          id="briefing"
+          index="05"
+          title="Your briefing"
+          lede="Every day and every week: what needs your decision, what changed, what your agents found and what you have been writing about, ordered by what you hold."
+        >
+          <Shot src="/screenshots/briefing.png" alt="A weekly briefing: decisions waiting, what changed, agent findings and new links in the graph" />
+        </Feature>
+
+        {/* 06 Insights */}
+        <Feature index="06" title="Insights" lede="JARVIS tells you what changed, why it matters and which memories show it. Every insight comes from a rule you can read, not a guess.">
+          <article className="space-y-3 border border-line p-6">
+            <span className="eyebrow bg-cobalt px-1.5 py-0.5 text-white">Second order</span>
+            <h3 className="text-xl font-semibold tracking-tight">OpenAI reaches 86.3% of your portfolio</h3>
+            <p className="text-sm"><span className="eyebrow mr-2 text-gray">What changed</span>OpenAI depends on NVIDIA, which issues NVDA (47.9%). It depends on Microsoft, which is linked to AMD (38.3%).</p>
+            <p className="text-sm"><span className="eyebrow mr-2 text-gray">Why it matters</span>None of your holdings links to OpenAI directly, so the exposure is easy to miss.</p>
+            <p className="eyebrow text-gray">From the fictional demo workspace</p>
+          </article>
+          <p className="eyebrow text-gray">Concentration · exposure change · goals · thesis change · contradictions · new connections · attention · second order · look-alikes</p>
+        </Feature>
+
+        {/* 07 Financial context */}
+        <Feature index="07" title="Financial context" lede="Positions, transactions, watchlists and theses live next to the notes that explain them. A trade remembers why you made it.">
+          <div className="overflow-x-auto border border-line">
+            <div className="min-w-[440px]">
+              <div className="eyebrow grid grid-cols-[56px_1fr_auto] gap-6 border-b border-line bg-surface px-4 py-2 text-gray">
+                <span>Position</span><span>Thesis</span><span>Evidence</span>
               </div>
-            ))}
+              {[
+                ["NVDA", "AI infrastructure spend is still early", "1 for · 2 against"],
+                ["AMD", "AMD takes share in inference", "1 for · 2 against"],
+                ["ETH", "Ether as a settlement layer", "1 for · 0 against"],
+              ].map(([a, t, e]) => (
+                <div key={a} className="grid grid-cols-[56px_1fr_auto] items-baseline gap-6 border-b border-line px-4 py-3 text-sm last:border-b-0">
+                  <span className="font-mono">{a}</span>
+                  <span>{t}</span>
+                  <span className="eyebrow text-gray">{e}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <p className="eyebrow text-gray">From the fictional demo workspace</p>
         </Feature>
 
-        {/* 06 Insights */}
-        <Feature index="06" title="Insights" lede="JARVIS tells you what changed, why it matters and which memories show it. No dashboards to stare at.">
-          <article className="space-y-3 border border-line p-6">
-            <span className="eyebrow bg-cobalt px-1.5 py-0.5 text-white">Concentration</span>
-            <h3 className="text-xl font-semibold tracking-tight">Most of your equity risk is one theme</h3>
-            <p className="text-sm"><span className="eyebrow mr-2 text-gray">What changed</span>NVDA and AMD are 70% of cost basis, and both link to AI infrastructure in your graph.</p>
-            <p className="text-sm"><span className="eyebrow mr-2 text-gray">Why it matters</span>Your own note says they would fall together if data center capex slows.</p>
-            <p className="eyebrow text-gray">Example from the demo workspace</p>
-          </article>
-        </Feature>
-
-        {/* 07 Robinhood */}
-        <Feature id="robinhood" index="07" title="Robinhood integration" lede="JARVIS connects only through Robinhood's documented interfaces, starting read-only. It never places a trade by itself.">
+        {/* 08 Actions */}
+        <Feature id="actions" index="08" title="Actions, never automatic" lede="JARVIS can propose a trade. Only you can approve it, by typing the order, and only you can submit it, in a separate step.">
           <ol className="grid gap-px border border-line bg-line sm:grid-cols-4">
-            {["AI proposes", "You review", "You confirm", "Then it executes"].map((s, i) => (
-              <li key={s} className="space-y-2 bg-white p-4">
+            {[
+              ["JARVIS proposes", "From a goal you set or a question you asked, with the reasoning and evidence."],
+              ["You type the order", "Approval needs the exact phrase, like SELL 8.27 NVDA. It lasts 15 minutes."],
+              ["You submit", "A second, separate step. The approved ticket is signed; any change after approval is refused."],
+              ["It is remembered", "The fill becomes a trade memory, and every step lands in the audit log."],
+            ].map(([t, d], i) => (
+              <li key={t} className="space-y-2 bg-white p-4">
                 <span className="font-mono text-xs text-cobalt">0{i + 1}</span>
-                <p className="font-medium">{s}</p>
+                <p className="font-medium">{t}</p>
+                <p className="text-sm text-gray">{d}</p>
               </li>
             ))}
           </ol>
-          <p className="text-sm text-gray">
-            Every proposal records the asset, quantity, estimated price, reasoning and the memories behind it, with an audit trail. Brokerage connections are planned for Phase 3; the demo uses a mock broker with fictional data.
-          </p>
+          <Shot src="/screenshots/actions.png" alt="Reviewing a proposed sell order: the reasoning, the effect on exposure, and the box where you type the order to approve it" />
         </Feature>
 
-        {/* 08 How it works */}
-        <section id="how" className="grid gap-8 border-t border-ink py-16 lg:grid-cols-12">
-          <Heading index="08" title="How it works" />
+        {/* 09 Robinhood and security */}
+        <section id="robinhood" className="grid grid-cols-1 gap-8 border-t border-ink py-16 lg:grid-cols-12">
+          <div className="space-y-4 lg:col-span-4">
+            <Heading index="09" title="Robinhood, and your keys" />
+            <p className="max-w-sm leading-relaxed text-gray">Official, documented interfaces only. Nothing reverse-engineered, nothing guessed.</p>
+          </div>
+          <div className="space-y-8 lg:col-span-8">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] text-sm">
+                <tbody className="divide-y divide-line border-y border-line">
+                  {[
+                    ["Robinhood Chain", "Read-only wallet balance over the public RPC. No private keys, ever.", "Available"],
+                    ["Robinhood Crypto Trading API", "Waiting on the official request and signing reference before any code is written.", "Planned"],
+                    ["Demo brokerage", "Fictional account with paper fills, so the whole flow can be tried safely.", "Available"],
+                  ].map(([k, v, st]) => (
+                    <tr key={k}>
+                      <th className="w-56 py-3 pr-4 text-left align-top font-medium">{k}</th>
+                      <td className="py-3 pr-4 text-gray">{v}</td>
+                      <td className={cn("eyebrow py-3 text-right align-top", st === "Available" ? "text-cobalt" : "text-gray")}>{st}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="grid gap-px border border-line bg-line sm:grid-cols-3">
+              {[
+                ["Encrypted credentials", "AES-256-GCM, decrypted on the server only."],
+                ["Keys stay server-side", "Model and broker keys never reach the browser."],
+                ["Signed approvals", "HMAC-signed tickets, checked by the provider."],
+                ["Audit log", "Every sign-in, approval, submission and connection."],
+                ["Demo and live apart", "Every financial row carries its data mode."],
+                ["No invented data", "No fetched prices; illustrative numbers are labelled."],
+              ].map(([k, v]) => (
+                <div key={k} className="space-y-1 bg-white p-4">
+                  <p className="font-medium">{k}</p>
+                  <p className="text-sm text-gray">{v}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 10 How it works */}
+        <section id="how" className="grid grid-cols-1 gap-8 border-t border-ink py-16 lg:grid-cols-12">
+          <Heading index="10" title="How it works" />
           <div className="lg:col-span-8">
             <ol className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
               {LOOP.map((step, i) => (
@@ -150,35 +233,61 @@ export default function LandingPage() {
                 </li>
               ))}
             </ol>
-            <p className="mt-4 text-sm text-gray">The loop closes on itself: every answer, insight and action becomes new memory.</p>
+            <p className="mt-4 text-sm text-gray">The loop closes on itself: every answer, insight, briefing and action becomes new memory.</p>
           </div>
         </section>
 
-        {/* 09 Screenshots */}
+        {/* 11 Screenshots */}
         <section className="space-y-8 border-t border-ink py-16">
-          <Heading index="09" title="The product" />
+          <Heading index="11" title="The product" />
           <div className="grid gap-6 lg:grid-cols-2">
             <figure className="space-y-2">
-              <Shot src="/screenshots/overview.png" alt="JARVIS overview with the command box, memory, graph, portfolio and insights" />
+              <Shot src="/screenshots/overview.png" alt="JARVIS overview: the command box and this week's briefing with the decisions waiting" />
               <figcaption className="eyebrow text-gray">Overview</figcaption>
             </figure>
             <figure className="space-y-2">
-              <Shot src="/screenshots/ask.png" alt="An answer from JARVIS with the memories it used listed below" />
+              <Shot src="/screenshots/ask.png" alt="An answer from JARVIS with the memories and graph entities it used listed below" />
               <figcaption className="eyebrow text-gray">Ask, with memory used</figcaption>
             </figure>
           </div>
         </section>
 
-        {/* 10 CTA */}
-        <section className="my-16 grid items-end gap-8 bg-cobalt p-8 text-white sm:p-12 lg:grid-cols-12">
+        {/* 12 Open source */}
+        <section id="open-source" className="grid grid-cols-1 gap-8 border-t border-ink py-16 lg:grid-cols-12">
+          <div className="space-y-4 lg:col-span-4">
+            <Heading index="12" title="Run it yourself" />
+            <p className="max-w-sm leading-relaxed text-gray">Open source. Two commands, no keys: an embedded Postgres, offline AI and the demo workspace. Add a model key when you want reasoning.</p>
+          </div>
+          <div className="space-y-4 lg:col-span-8">
+            <pre className="overflow-x-auto bg-ink p-5 font-mono text-sm leading-relaxed text-white">
+              <code>
+                <span className="text-white/50"># Node.js 22</span>
+                {"\n"}git clone {REPO}.git && cd JARVIS
+                {"\n"}npm install
+                {"\n"}npm run dev <span className="text-white/50"># http://localhost:3000</span>
+              </code>
+            </pre>
+            <div className="flex flex-wrap gap-3">
+              <a href={REPO} className={buttonVariants({ variant: "outline" })}>
+                <GitBranch /> Repository
+              </a>
+              <a href={`${REPO}/blob/main/docs/architecture.md`} className={buttonVariants({ variant: "ghost" })}>
+                Architecture <ArrowRight />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* 13 CTA */}
+        <section className="my-16 grid grid-cols-1 items-end gap-8 bg-cobalt p-8 text-white sm:p-12 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-8">
-            <p className="eyebrow text-white/70">10 — Start</p>
+            <p className="eyebrow text-white/70">13 — Start</p>
             <h2 className="display text-[clamp(2.5rem,6vw,5.5rem)]">Give your portfolio a memory.</h2>
             <Link href="/login" className={buttonVariants({ variant: "secondary", size: "lg" })}>
               Explore the demo workspace <ArrowRight />
             </Link>
           </div>
-          <div className="flex justify-end lg:col-span-4">
+          <div className="hidden justify-end sm:flex lg:col-span-4">
             <Mascot size={260} />
           </div>
         </section>
@@ -186,7 +295,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-line">
         <div className="eyebrow mx-auto flex max-w-[1400px] flex-wrap justify-between gap-4 px-4 py-6 text-gray sm:px-8">
-          <span>JARVIS — open source</span>
+          <a href={REPO} className="hover:text-ink">JARVIS — open source</a>
           <span>Not investment advice. JARVIS never executes trades on its own.</span>
         </div>
       </footer>
@@ -205,7 +314,7 @@ function Heading({ index, title }: { index: string; title: string }) {
 
 function Feature({ id, index, title, lede, children }: { id?: string; index: string; title: string; lede: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="grid gap-8 border-t border-ink py-16 lg:grid-cols-12">
+    <section id={id} className="grid grid-cols-1 gap-8 border-t border-ink py-16 lg:grid-cols-12">
       <div className="space-y-4 lg:col-span-4">
         <Heading index={index} title={title} />
         <p className="max-w-sm leading-relaxed text-gray">{lede}</p>
